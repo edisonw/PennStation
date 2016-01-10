@@ -1,4 +1,4 @@
-[Inter-process action-event service] that I use as a template to build apps that require IPC.
+[PennStation] is an event service that I use as a template to build apps that require IPC.
 
 # Why?
 
@@ -64,7 +64,7 @@ For class that owns [event listeners]:
 * Write the listeners that listens to those events and XXXEventListener will be generated.
 * Implement the listeners and (un)register it via Events.registerListener().
 
-[Inter-process action-event service]: https://github.com/edisonw/Ipes
+[PennStation]: https://github.com/edisonw/Ipes
 [EventBus]: https://github.com/google/guava/wiki/EventBusExplained
 [Otto by Square]: http://square.github.io/otto/
 [EventBus by greenrobot]: https://github.com/greenrobot/
