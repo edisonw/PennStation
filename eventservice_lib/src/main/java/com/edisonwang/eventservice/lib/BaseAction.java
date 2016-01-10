@@ -5,6 +5,6 @@ package com.edisonwang.eventservice.lib;
  */
 public interface BaseAction {
 
-    ActionResult processRequest(EventService service, ActionRequest actionRequest);
+    ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest);
 
 }

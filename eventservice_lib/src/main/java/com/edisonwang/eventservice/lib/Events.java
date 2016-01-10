@@ -1,6 +1,7 @@
 package com.edisonwang.eventservice.lib;
 
 import android.app.Application;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -58,16 +59,16 @@ public final class Events {
 
     public static class EventManager {
 
-        private final EventService.EventServiceConnection mServiceConnection;
+        private final EventServiceImpl.EventServiceConnection mServiceConnection;
         private final EventBus mBus;
 
-        private EventManager(Context context, Class<? extends EventService> eventServiceClass) {
+        private EventManager(Context context, Class<? extends Service> eventServiceClass) {
             mBus = new EventBus();
-            EventService.EventServiceResponseHandler mServiceResponseHandler =
-                    new EventService.EventServiceResponseHandler() {
+            EventServiceImpl.EventServiceResponseHandler mServiceResponseHandler =
+                    new EventServiceImpl.EventServiceResponseHandler() {
                         @Override
                         public void handleServiceResponse(Bundle b) {
-                            final String reqId = b.getString(EventService.EventServiceConnection.EXTRA_REQUEST_ID);
+                            final String reqId = b.getString(EventServiceImpl.EventServiceConnection.EXTRA_REQUEST_ID);
 
                             if (reqId == null) {
                                 //The service requestAction was not made by an app controller.
@@ -75,7 +76,7 @@ public final class Events {
                             }
 
                             mServiceConnection.remove(reqId);
-                            ActionResult result = b.getParcelable(EventService.EXTRA_SERVICE_RESULT);
+                            ActionResult result = b.getParcelable(EventServiceImpl.EXTRA_SERVICE_RESULT);
 
                             if (result != null) {
                                 result.setResponseInfo(new ResponseInfo(b));
@@ -83,7 +84,7 @@ public final class Events {
                             }
                         }
                     };
-            mServiceConnection = new EventService.EventServiceConnection(context, mServiceResponseHandler);
+            mServiceConnection = new EventServiceImpl.EventServiceConnection(context, mServiceResponseHandler);
             context.bindService(new Intent(context, eventServiceClass), mServiceConnection,
                     Context.BIND_AUTO_CREATE);
         }
@@ -106,7 +107,7 @@ public final class Events {
 
         public String requestAction(ActionRequest request) {
             Bundle bundle = new Bundle();
-            bundle.putParcelable(EventService.EXTRA_SERVICE_REQUEST, request);
+            bundle.putParcelable(EventServiceImpl.EXTRA_SERVICE_REQUEST, request);
             return mServiceConnection.queueAndExecute(bundle);
         }
     }

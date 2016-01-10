@@ -17,9 +17,9 @@ public class ResponseInfo {
 
     public ResponseInfo(Bundle b) {
         mOriginalResultBundle = b;
-        mRequestTime = b.getLong(EventService.EventServiceConnection.EXTRA_REQUEST_TIME_MS, 0);
+        mRequestTime = b.getLong(EventServiceImpl.EventServiceConnection.EXTRA_REQUEST_TIME_MS, 0);
         mResultTime = System.currentTimeMillis();
-        mRequestId = b.getString(EventService.EventServiceConnection.EXTRA_REQUEST_ID);
-        mRequest = b.getParcelable(EventService.EXTRA_SERVICE_REQUEST);
+        mRequestId = b.getString(EventServiceImpl.EventServiceConnection.EXTRA_REQUEST_ID);
+        mRequest = b.getParcelable(EventServiceImpl.EXTRA_SERVICE_REQUEST);
     }
 }

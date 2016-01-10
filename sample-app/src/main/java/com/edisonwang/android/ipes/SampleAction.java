@@ -15,7 +15,7 @@ import com.edisonwang.eventservice.lib.ActionRequest;
 import com.edisonwang.eventservice.lib.ActionRequestBuilder;
 import com.edisonwang.eventservice.lib.ActionResult;
 import com.edisonwang.eventservice.lib.BaseAction;
-import com.edisonwang.eventservice.lib.EventService;
+import com.edisonwang.eventservice.lib.EventServiceImpl;
 
 /**
  * @author edi
@@ -40,7 +40,7 @@ public class SampleAction implements BaseAction {
     private static final String TAG = "SampleAction";
 
     @Override
-    public ActionResult processRequest(EventService service, ActionRequest actionRequest) {
+    public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest) {
         SampleActionHelper helper = Samples.sampleAction();
         helper.setVariableValues(actionRequest.getArguments(getCurrentClassLoader()));
         Log.i(TAG, "Processing requestAction " + helper.sampleParamTwo().mTestName);
@@ -53,7 +53,7 @@ public class SampleAction implements BaseAction {
 
     /**
      * @return the class loader associated with the current module,
-     *         you may want to use a different class loader.
+     * you may want to use a different class loader.
      */
     private ClassLoader getCurrentClassLoader() {
         return getClass().getClassLoader();
