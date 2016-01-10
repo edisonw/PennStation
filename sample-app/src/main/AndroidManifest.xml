@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.edisonwang.android.ipes">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name">
+
+
+        <!-- We will use :process or :isolatedProcess here for demonstration purposes-->
+        <service
+            android:process=":sample_event_service_process"
+            android:name="com.edisonwang.eventservice.lib.EventService" />
+
+        <activity
+            android:name=".SampleActivity"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
