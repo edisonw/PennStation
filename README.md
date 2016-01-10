@@ -50,16 +50,19 @@ dependencies {
 ```java
         Events.init(getApplication(), EventService.class); //or extended class.
 ```
+
 For each action the service needs to perform: 
-1. Write the actions you want the event service to take. ([Full SampleAction])
-2. Tag it with @EventProducer with the events it will emit.
-3. Tag it with @RequestFactory so it will be registered.
-4. Optional: Tag it with @RequestFactoryWithVariables so convinence factories will be created.
-5. Optional: Tag it with @RequestFactoryWithClass so convinence methods will be added.
+
+* Write the actions you want the event service to take. ([Full SampleAction])
+* Tag it with @EventProducer with the events it will emit.
+* Tag it with @RequestFactory so it will be registered.
+* Optional: Tag it with @RequestFactoryWithVariables so convinence factories will be created.
+* Optional: Tag it with @RequestFactoryWithClass so convinence methods will be added.
 
 For class that owns [event listeners]:
-1. Write the listeners that listens to those events and XXXEventListener will be generated.
-2. Implement the listeners and (un)register it via Events.registerListener().
+
+* Write the listeners that listens to those events and XXXEventListener will be generated.
+* Implement the listeners and (un)register it via Events.registerListener().
 
 [Inter-process action-event service]: https://github.com/edisonw/Ipes
 [EventBus]: https://github.com/google/guava/wiki/EventBusExplained
