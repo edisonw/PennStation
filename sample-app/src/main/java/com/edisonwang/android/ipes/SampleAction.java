@@ -15,7 +15,6 @@ import com.edisonwang.eventservice.lib.ActionKey_.Samples;
 import com.edisonwang.eventservice.lib.ActionRequest;
 import com.edisonwang.eventservice.lib.ActionRequestBuilder;
 import com.edisonwang.eventservice.lib.ActionResult;
-import com.edisonwang.eventservice.lib.BaseAction;
 import com.edisonwang.eventservice.lib.EventServiceImpl;
 
 /**
@@ -72,6 +71,7 @@ public class SampleAction implements Action {
         }
 
         public SampleActionEvent(Parcel in) {
+            super(in);
             mSampleParam = in.readString();
             mSampleParcelable = in.readParcelable(SampleParcelable.class.getClassLoader());
         }
@@ -83,6 +83,7 @@ public class SampleAction implements Action {
 
         @Override
         public void writeToParcel(Parcel dest, int flags) {
+            super.writeToParcel(dest, flags);
             dest.writeString(mSampleParam);
             dest.writeParcelable(mSampleParcelable, flags);
         }
