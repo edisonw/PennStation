@@ -48,7 +48,7 @@ dependencies {
 ```
 * In your custom Application class or Activity.onCreate(), add 
 ```java
-        Events.init(getApplication(), EventService.class); //or extended class.
+        PennStation.init(getApplication(), EventService.class); //or extended class.
 ```
 
 For each action the service needs to perform: 
