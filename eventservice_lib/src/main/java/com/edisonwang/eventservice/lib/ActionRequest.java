@@ -61,7 +61,7 @@ public class ActionRequest implements Parcelable {
     };
 
     public ActionResult process(EventServiceImpl service, Bundle bundle) {
-        BaseAction action = mActionKey.value();
+        Action action = mActionKey.value();
         return action.processRequest(service, this);
     }
 }

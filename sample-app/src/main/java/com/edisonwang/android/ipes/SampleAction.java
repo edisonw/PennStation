@@ -9,6 +9,7 @@ import com.edisonwang.eventservice.annotations.EventProducer;
 import com.edisonwang.eventservice.annotations.RequestFactory;
 import com.edisonwang.eventservice.annotations.RequestFactoryVariable;
 import com.edisonwang.eventservice.annotations.RequestFactoryWithVariables;
+import com.edisonwang.eventservice.lib.Action;
 import com.edisonwang.eventservice.lib.ActionKey;
 import com.edisonwang.eventservice.lib.ActionKey_.Samples;
 import com.edisonwang.eventservice.lib.ActionRequest;
@@ -26,7 +27,7 @@ import com.edisonwang.eventservice.lib.EventServiceImpl;
 })
 @RequestFactory(
         baseClass = ActionKey.class,
-        valueType = BaseAction.class,
+        valueType = Action.class,
         group = "Samples"
 )
 @RequestFactoryWithVariables(baseClass = ActionRequestBuilder.class, variables = {
@@ -35,7 +36,7 @@ import com.edisonwang.eventservice.lib.EventServiceImpl;
         @RequestFactoryVariable(name = "shouldFail", kind = Boolean.class)
 }
 )
-public class SampleAction implements BaseAction {
+public class SampleAction implements Action {
 
     private static final String TAG = "SampleAction";
 

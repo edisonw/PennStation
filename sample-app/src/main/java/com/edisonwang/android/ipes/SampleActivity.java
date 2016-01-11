@@ -8,7 +8,7 @@ import android.view.View;
 import com.edisonwang.eventservice.annotations.EventListener;
 import com.edisonwang.eventservice.lib.ActionKey_.Samples;
 import com.edisonwang.eventservice.lib.EventService;
-import com.edisonwang.eventservice.lib.Events;
+import com.edisonwang.eventservice.lib.PennStation;
 
 @EventListener(producers = {
         SampleAction.class
@@ -36,26 +36,26 @@ public class SampleActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample);
-        Events.init(getApplication(), EventService.class);
+        PennStation.init(getApplication(), EventService.class);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Events.registerListener(mListener);
+        PennStation.registerListener(mListener);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        Events.unRegisterListener(mListener);
+        PennStation.unRegisterListener(mListener);
     }
 
     public void testEventRequest(View button) {
-        Events.requestAction(Samples.sampleAction().sampleParam("sampleParamOneToFail").sampleParamTwo(
+        PennStation.requestAction(Samples.sampleAction().sampleParam("sampleParamOneToFail").sampleParamTwo(
                 new SampleAction.SampleParcelable("FailParcelable")).shouldFail(true)
                 .build());
-        Events.requestAction(Samples.sampleAction().sampleParam("sampleParamOneToSucceed").sampleParamTwo(
+        PennStation.requestAction(Samples.sampleAction().sampleParam("sampleParamOneToSucceed").sampleParamTwo(
                 new SampleAction.SampleParcelable("SuccessParcelable")).shouldFail(false)
                 .build());
     }

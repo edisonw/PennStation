@@ -3,7 +3,7 @@ package com.edisonwang.eventservice.lib;
 /**
  * @author edi
  */
-public interface BaseAction {
+public interface Action {
 
     ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest);
 
