@@ -11,9 +11,9 @@ import de.greenrobot.event.EventBus;
 /**
  * @author edi
  */
-public final class Events {
+public class PennStation {
 
-    private Events() {
+    private PennStation() {
 
     }
 
