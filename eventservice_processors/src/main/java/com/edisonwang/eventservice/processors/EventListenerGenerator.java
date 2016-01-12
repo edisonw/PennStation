@@ -218,7 +218,7 @@ public class EventListenerGenerator extends AbstractProcessor {
 
             writer.write("}\n");
             writer.close();
-            return eventClassName;
+            return packageName + "." + eventClassName;
         } catch (Throwable e) {
             throw new IllegalArgumentException("Failed to write.", e);
         }
