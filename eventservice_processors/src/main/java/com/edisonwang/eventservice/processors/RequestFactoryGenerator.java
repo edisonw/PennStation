@@ -1,7 +1,7 @@
 package com.edisonwang.eventservice.processors;
 
 import com.edisonwang.eventservice.annotations.RequestFactory;
-import com.edisonwang.eventservice.annotations.RequestFactoryVariable;
+import com.edisonwang.eventservice.annotations.ClassField;
 import com.edisonwang.eventservice.annotations.RequestFactoryWithClass;
 import com.edisonwang.eventservice.annotations.RequestFactoryWithVariables;
 import com.google.auto.service.AutoService;
@@ -52,7 +52,7 @@ public class RequestFactoryGenerator extends AbstractProcessor {
         set.add(RequestFactory.class.getCanonicalName());
         set.add(RequestFactoryWithClass.class.getCanonicalName());
         set.add(RequestFactoryWithVariables.class.getCanonicalName());
-        set.add(RequestFactoryVariable.class.getCanonicalName());
+        set.add(ClassField.class.getCanonicalName());
         NAMES = Collections.unmodifiableSet(set);
     }
 
@@ -183,6 +183,7 @@ public class RequestFactoryGenerator extends AbstractProcessor {
             if (variables != null) {
                 addFactoryAndFactoryMethod(variables, classElement, enumName, groupSpec, groupId);
             }
+
         }
 
         for (String baseClass : groupToPackage.keySet()) {
@@ -233,7 +234,7 @@ public class RequestFactoryGenerator extends AbstractProcessor {
         }
 
         //Only primitives are supported.
-        RequestFactoryVariable[] variables = anno.variables();
+        ClassField[] variables = anno.variables();
 
         String packageName = classElement.getQualifiedName().toString().substring(0, classElement.getQualifiedName().toString().lastIndexOf("."));
         String className = enumName + "Helper";
@@ -248,7 +249,7 @@ public class RequestFactoryGenerator extends AbstractProcessor {
                     "public class " + className + " extends " + baseTypeMirror.toString() + " {",
                     "{ mTarget=" + groupId + "." + enumName + "; }"
             ));
-            for (RequestFactoryVariable variable : variables) {
+            for (ClassField variable : variables) {
                 String name = variable.name();
                 String kindName;
                 try {

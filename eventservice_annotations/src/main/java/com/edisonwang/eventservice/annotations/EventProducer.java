@@ -16,5 +16,9 @@ import java.lang.annotation.Target;
 @Retention(value = RetentionPolicy.CLASS)
 @Inherited
 public @interface EventProducer {
+    /**
+     * Event classes that needs to be generated.
+     */
+    ResultClassWithVariables[] generated();
     Class[] events();
 }

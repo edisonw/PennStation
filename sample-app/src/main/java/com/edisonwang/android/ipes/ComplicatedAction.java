@@ -6,9 +6,12 @@ import android.os.Parcelable;
 import android.util.Log;
 
 import com.edisonwang.eventservice.annotations.EventProducer;
+import com.edisonwang.eventservice.annotations.ParcelableClassField;
 import com.edisonwang.eventservice.annotations.RequestFactory;
-import com.edisonwang.eventservice.annotations.RequestFactoryVariable;
+import com.edisonwang.eventservice.annotations.ClassField;
 import com.edisonwang.eventservice.annotations.RequestFactoryWithVariables;
+import com.edisonwang.eventservice.annotations.ResultClassWithVariables;
+import com.edisonwang.eventservice.baggers.ParcelableBagger;
 import com.edisonwang.eventservice.lib.Action;
 import com.edisonwang.eventservice.lib.ActionKey;
 import com.edisonwang.eventservice.lib.ActionKey_.Samples;
@@ -17,12 +20,26 @@ import com.edisonwang.eventservice.lib.ActionRequestBuilder;
 import com.edisonwang.eventservice.lib.ActionResult;
 import com.edisonwang.eventservice.lib.EventServiceImpl;
 
+import java.util.Random;
+
 /**
  * @author edi
  */
 @EventProducer(events = {
-        SampleAction.SampleActionSuccessEvent.class,
-        SampleAction.SampleActionFailedEvent.class
+        ComplicatedAction.SampleActionSuccessEvent.class,
+        ComplicatedAction.SampleActionFailedEvent.class
+}, generated = {
+        @ResultClassWithVariables(classPostFix = "Sample", baseClass = ActionResult.class,
+                fields = {
+                        @ParcelableClassField(
+                                name = "sampleParam3",
+                                kind = String.class,
+                                bagger = SampleStringParceler.class),
+                        @ParcelableClassField(
+                                name = "sampleParcelable",
+                                kind = ComplicatedAction.SampleParcelable.class,
+                                bagger = ParcelableBagger.class)
+                }),
 })
 @RequestFactory(
         baseClass = ActionKey.class,
@@ -30,24 +47,32 @@ import com.edisonwang.eventservice.lib.EventServiceImpl;
         group = "Samples"
 )
 @RequestFactoryWithVariables(baseClass = ActionRequestBuilder.class, variables = {
-        @RequestFactoryVariable(name = "sampleParam", kind = String.class),
-        @RequestFactoryVariable(name = "sampleParamTwo", kind = SampleAction.SampleParcelable.class),
-        @RequestFactoryVariable(name = "shouldFail", kind = Boolean.class)
+        @ClassField(name = "sampleParam", kind = String.class),
+        @ClassField(name = "sampleParamTwo", kind = ComplicatedAction.SampleParcelable.class),
+        @ClassField(name = "shouldFail", kind = Boolean.class)
 }
 )
-public class SampleAction implements Action {
+public class ComplicatedAction implements Action {
 
-    private static final String TAG = "SampleAction";
+    private static final String TAG = "ComplicatedAction";
+
+    private static final Random sRandom = new Random();
 
     @Override
     public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest) {
-        SampleActionHelper helper = Samples.sampleAction();
+        ComplicatedActionHelper helper = Samples.complicatedAction();
         helper.setVariableValues(actionRequest.getArguments(getCurrentClassLoader()));
         Log.i(TAG, "Processing requestAction " + helper.sampleParamTwo().mTestName);
         if (helper.shouldFail()) {
             return new SampleActionFailedEvent(helper.sampleParam(), helper.sampleParamTwo());
         } else {
-            return new SampleActionSuccessEvent(helper.sampleParam(), helper.sampleParamTwo());
+            if (sRandom.nextInt() % 2 == 0) {
+                return new SampleActionSuccessEvent(helper.sampleParam(), helper.sampleParamTwo());
+            } else {
+                ComplicatedActionEventSample generatedEvent = new ComplicatedActionEventSample();
+                generatedEvent.sampleParam3 = "sampleParam3";
+                return generatedEvent;
+            }
         }
     }
 

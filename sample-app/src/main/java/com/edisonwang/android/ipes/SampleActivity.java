@@ -11,7 +11,8 @@ import com.edisonwang.eventservice.lib.EventService;
 import com.edisonwang.eventservice.lib.PennStation;
 
 @EventListener(producers = {
-        SampleAction.class
+        ComplicatedAction.class,
+        SimpleAction.class
 })
 public class SampleActivity extends Activity {
 
@@ -20,15 +21,26 @@ public class SampleActivity extends Activity {
     private SampleActivityEventListener mListener = new SampleActivityEventListener() {
 
         @Override
-        public void onEventMainThread(SampleAction.SampleActionFailedEvent event) {
+        public void onEventMainThread(SimpleActionEvent event) {
+            Log.i(TAG, "Got " + event.getClass().getSimpleName());
+        }
+
+        @Override
+        public void onEventMainThread(ComplicatedAction.SampleActionFailedEvent event) {
             Log.i(TAG, "Got " + event.getClass().getSimpleName() + " that was " +
                     event.mSampleParam + " " + event.mSampleParcelable.mTestName);
         }
 
         @Override
-        public void onEventMainThread(SampleAction.SampleActionSuccessEvent event) {
+        public void onEventMainThread(ComplicatedAction.SampleActionSuccessEvent event) {
             Log.i(TAG, "Got " + event.getClass().getSimpleName() + " that was " +
                     event.mSampleParam + " " + event.mSampleParcelable.mTestName);
+        }
+
+        @Override
+        public void onEventMainThread(ComplicatedActionEventSample event) {
+            Log.i(TAG, "Got " + event.getClass().getSimpleName() + " that was " +
+                    event.sampleParam3);
         }
     };
 
@@ -52,11 +64,12 @@ public class SampleActivity extends Activity {
     }
 
     public void testEventRequest(View button) {
-        PennStation.requestAction(Samples.sampleAction().sampleParam("sampleParamOneToFail").sampleParamTwo(
-                new SampleAction.SampleParcelable("FailParcelable")).shouldFail(true)
+        PennStation.requestAction(Samples.simpleAction().build());
+        PennStation.requestAction(Samples.complicatedAction().sampleParam("sampleParamOneToFail").sampleParamTwo(
+                new ComplicatedAction.SampleParcelable("FailParcelable")).shouldFail(true)
                 .build());
-        PennStation.requestAction(Samples.sampleAction().sampleParam("sampleParamOneToSucceed").sampleParamTwo(
-                new SampleAction.SampleParcelable("SuccessParcelable")).shouldFail(false)
+        PennStation.requestAction(Samples.complicatedAction().sampleParam("sampleParamOneToSucceed").sampleParamTwo(
+                new ComplicatedAction.SampleParcelable("SuccessParcelable")).shouldFail(false)
                 .build());
     }
 }

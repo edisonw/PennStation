@@ -3,7 +3,7 @@ package com.edisonwang.eventservice.annotations;
 /**
  * @author edi
  */
-public @interface RequestFactoryVariable {
+public @interface ClassField {
     String name();
     Class kind();
 }
