@@ -180,7 +180,7 @@ public class EventServiceImpl<T extends Service> {
             ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
             ActionResult result = null;
             if (event != null) {
-                result = event.process(EventServiceImpl.this, mBundle);
+                result = event.process(EventServiceImpl.this);
             }
             if (result != null) {
                 mBundle.putParcelable(EXTRA_SERVICE_RESULT, result);

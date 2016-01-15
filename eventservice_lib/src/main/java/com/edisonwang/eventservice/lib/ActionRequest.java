@@ -35,6 +35,9 @@ public class ActionRequest implements Parcelable {
     protected ActionRequest(Parcel in) {
         mActionKey = (ActionKey) in.readSerializable();
         mArgs = in.readBundle();
+        if (mArgs == null) {
+            mArgs = new Bundle();
+        }
     }
 
     @Override
@@ -60,8 +63,7 @@ public class ActionRequest implements Parcelable {
         }
     };
 
-    public ActionResult process(EventServiceImpl service, Bundle bundle) {
-        Action action = mActionKey.value();
-        return action.processRequest(service, this);
+    public ActionResult process(EventServiceImpl service) {
+        return mActionKey.value().processRequest(service, this);
     }
 }

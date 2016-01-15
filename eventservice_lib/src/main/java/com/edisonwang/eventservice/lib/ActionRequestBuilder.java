@@ -22,7 +22,10 @@ public class ActionRequestBuilder {
         }
         //Expensive.
         Bundle extras = mVariableHolder.getExtras();
-        return extras.get(name);
+        if (extras != null) {
+            return extras.get(name);
+        }
+        return null;
     }
 
     public ActionRequest build() {
