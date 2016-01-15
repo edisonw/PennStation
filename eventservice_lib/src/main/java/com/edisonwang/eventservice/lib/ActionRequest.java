@@ -15,6 +15,9 @@ public class ActionRequest implements Parcelable {
     public ActionRequest(ActionKey actionKey, Bundle args) {
         mActionKey = actionKey;
         mArgs = args;
+        if (mArgs == null) {
+            mArgs = new Bundle();
+        }
     }
 
 
