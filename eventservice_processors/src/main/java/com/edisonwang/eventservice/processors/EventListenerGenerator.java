@@ -203,8 +203,8 @@ public class EventListenerGenerator extends AbstractProcessor {
             for (ParcelableClassFieldParsed p : parsed) {
                 if (p.required) {
                     ctr.addParameter(ClassName.bestGuess(p.kindName), p.name);
+                    ctr.addStatement("this.$L = $L", p.name, p.name);
                 }
-                ctr.addStatement("this.$L = $L", p.name, p.name);
             }
             typeBuilder.addMethod(ctr.build());
 
