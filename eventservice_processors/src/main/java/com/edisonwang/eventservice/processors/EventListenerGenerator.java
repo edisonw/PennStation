@@ -5,9 +5,13 @@ import com.edisonwang.eventservice.annotations.EventProducer;
 import com.edisonwang.eventservice.annotations.ParcelableClassField;
 import com.edisonwang.eventservice.annotations.ResultClassWithVariables;
 import com.google.auto.service.AutoService;
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
@@ -37,7 +41,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
 
 /**
  * Annotated Class -> List of Producers -> List of Events -> List of methods.
@@ -108,18 +111,18 @@ public class EventListenerGenerator extends AbstractProcessor {
                 listenedToEvents.addAll(events);
             }
 
-            String eventClassName = typed.getSimpleName().toString() + EventListener.class.getSimpleName();
+            String listenerClassName = typed.getSimpleName().toString() + EventListener.class.getSimpleName();
             String originalClassName = typed.getQualifiedName().toString();
             String packageName = packageFromQualifiedName(originalClassName);
 
-            TypeSpec.Builder typeBuilder = TypeSpec.interfaceBuilder(eventClassName).addModifiers(Modifier.PUBLIC);
+            TypeSpec.Builder typeBuilder = TypeSpec.interfaceBuilder(listenerClassName).addModifiers(Modifier.PUBLIC);
             for (String event : listenedToEvents) {
                 typeBuilder.addMethod(MethodSpec.methodBuilder(
                         (annotationElement.restrictMainThread() ? "onEventMainThread" : "onEvent"))
                         .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT).addParameter(ClassName.bestGuess(event), "event").build());
             }
             try {
-                Writer writer = filer.createSourceFile(packageName + "." + eventClassName).openWriter();
+                Writer writer = filer.createSourceFile(packageName + "." + listenerClassName).openWriter();
                 JavaFile jf = JavaFile.builder(packageName, typeBuilder.build()).build();
                 jf.writeTo(writer);
                 writer.close();
@@ -181,73 +184,82 @@ public class EventListenerGenerator extends AbstractProcessor {
                     resultEvent.classPostFix();
             String originalClassName = typed.getQualifiedName().toString();
             String packageName = packageFromQualifiedName(originalClassName);
+            ClassName self = ClassName.bestGuess(eventClassName);
 
-            JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(packageName + "." + eventClassName);
-            Writer writer = sourceFile.openWriter();
-            writer.write("package " + packageName + ";\n");
-            writer.write("import android.os.Parcel;\n");
-            writer.write("public class " + eventClassName + " extends " + baseTypeMirror.toString() + "  {\n\n");
-            int requiredSize = 0;
-            for (ParcelableClassFieldParsed p : parsed) {
-                writer.write("public " + p.kindName + " " + p.name + ";\n");
-                if (p.required) {
-                    requiredSize++;
-                }
+            if (baseTypeMirror == null) {
+                throw new IllegalStateException("Base type not found.");
             }
-            writer.write("\npublic " + eventClassName + "(");
-            int i = 1;
+
+            TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(eventClassName)
+                    .addModifiers(Modifier.PUBLIC)
+                    .superclass(ClassName.bestGuess(baseTypeMirror.toString()));
+
             for (ParcelableClassFieldParsed p : parsed) {
-                if (p.required) {
-                    writer.write(p.kindName + " " + p.name);
-                    if (i != requiredSize) {
-                        writer.write(", ");
-                    }
-                }
-                i++;
+                typeBuilder.addField(ClassName.bestGuess(p.kindName), p.name, Modifier.PUBLIC);
             }
-            writer.write(") {\n");
+
+            MethodSpec.Builder ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
+
             for (ParcelableClassFieldParsed p : parsed) {
                 if (p.required) {
-                    writer.write("\tthis." + p.name + " = " + p.name + ";\n");
+                    ctr.addParameter(ClassName.bestGuess(p.kindName), p.name);
                 }
+                ctr.addStatement("this.$L = $L", p.name, p.name);
             }
-            writer.write("}\n\n");
+            typeBuilder.addMethod(ctr.build());
 
-            writer.write("public " + eventClassName + "(Parcel in) {\n");
+            ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
+            ctr.addParameter(ClassName.bestGuess("android.os.Parcel"), "in");
             for (ParcelableClassFieldParsed p : parsed) {
-                writer.write("\tthis." + p.name + " = (" + p.kindName + ")" + p.parcelerName + ".readFromParcel(in, " + p.kindName + ".class );\n");
+                ctr.addStatement("\tthis." + p.name + " = (" + p.kindName + ")" + p.parcelerName + ".readFromParcel(in, " + p.kindName + ".class)");
             }
-            writer.write("}\n");
-            writer.write("\n" +
-                    "    @Override\n" +
-                    "    public int describeContents() {\n" +
-                    "        return 0;\n" +
-                    "    }\n" +
-                    "\n");
-            writer.write("" +
-                    "@Override\n" +
-                    "    public void writeToParcel(Parcel dest, int flags) {\n");
-            for (ParcelableClassFieldParsed p : parsed) {
-                writer.write("\t" + p.parcelerName + ".writeToParcel(this." + p.name + ", dest, flags);\n");
-            }
-            writer.write("}\n");
-            writer.write("\n" +
-                    "\n" +
-                    "    public static final Creator<" + eventClassName + "> CREATOR = " +
-                    "new Creator<" + eventClassName + ">() {\n" +
-                    "        @Override\n" +
-                    "        public " + eventClassName + " createFromParcel(Parcel in) {\n" +
-                    "            return new " + eventClassName + "(in);\n" +
-                    "        }\n" +
-                    "\n" +
-                    "        @Override\n" +
-                    "        public " + eventClassName + "[] newArray(int size) {\n" +
-                    "            return new " + eventClassName + "[size];\n" +
-                    "        }\n" +
-                    "    };\n");
+            typeBuilder.addMethod(ctr.build());
+            typeBuilder.addMethod(MethodSpec.methodBuilder("describeContents")
+                    .returns(int.class)
+                    .addStatement("return 0")
+                    .addModifiers(Modifier.PUBLIC).build());
 
-            writer.write("}\n");
-            writer.close();
+            MethodSpec.Builder writeToParcel = MethodSpec.methodBuilder("writeToParcel")
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(ClassName.bestGuess("android.os.Parcel"), "dest")
+                    .addParameter(TypeName.INT, "flags");
+            for (ParcelableClassFieldParsed p : parsed) {
+                writeToParcel.addStatement("$L.writeToParcel(this.$L, dest, flags)", p.parcelerName, p.name);
+            }
+
+            typeBuilder.addMethod(writeToParcel.build());
+
+
+            TypeSpec creator = TypeSpec.anonymousClassBuilder("")
+                    .addSuperinterface(ParameterizedTypeName.get(ClassName.bestGuess("android.os.Parcelable.Creator"), self))
+                    .addMethod(MethodSpec.methodBuilder("createFromParcel")
+                            .addModifiers(Modifier.PUBLIC)
+                            .returns(self)
+                            .addParameter(ClassName.bestGuess("android.os.Parcel"), "in")
+                            .addStatement("return new $L(in)", eventClassName)
+                            .build())
+                    .addMethod(MethodSpec.methodBuilder("newArray")
+                            .addModifiers(Modifier.PUBLIC)
+                            .returns(ArrayTypeName.of(self))
+                            .addParameter(TypeName.INT, "size")
+                            .addStatement("return new $L[size]", eventClassName)
+                            .build()
+                    ).build();
+
+            typeBuilder.addField(FieldSpec.builder(ParameterizedTypeName.get(ClassName.bestGuess("android.os.Parcelable.Creator"), self),
+                    "CREATOR", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                    .initializer("$L", creator).build());
+
+            try {
+                Writer writer = filer.createSourceFile(packageName + "." + eventClassName).openWriter();
+                JavaFile jf = JavaFile.builder(packageName, typeBuilder.build()).build();
+                jf.writeTo(writer);
+                writer.close();
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Failed to write class.", e);
+            }
+
+
             return packageName + "." + eventClassName;
         } catch (Throwable e) {
             throw new IllegalArgumentException("Failed to write.", e);

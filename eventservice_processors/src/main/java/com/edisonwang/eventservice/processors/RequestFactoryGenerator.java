@@ -1,11 +1,10 @@
 package com.edisonwang.eventservice.processors;
 
-import com.edisonwang.eventservice.annotations.RequestFactory;
 import com.edisonwang.eventservice.annotations.ClassField;
+import com.edisonwang.eventservice.annotations.RequestFactory;
 import com.edisonwang.eventservice.annotations.RequestFactoryWithClass;
 import com.edisonwang.eventservice.annotations.RequestFactoryWithVariables;
 import com.google.auto.service.AutoService;
-import com.google.common.base.Joiner;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
