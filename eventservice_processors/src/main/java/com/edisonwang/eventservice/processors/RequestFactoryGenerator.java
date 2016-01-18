@@ -35,7 +35,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
 
 /**
  * Annotated Class -> Groups of classes.
@@ -132,11 +131,8 @@ public class RequestFactoryGenerator extends AbstractProcessor {
             TypeName valueClassType = TypeName.get(valueTypeMirror);
 
             if (valueClassType.toString().equals(classElement.getQualifiedName().toString())) {
-                System.out.print("Ignoring base type...." + classElement.getQualifiedName() + "\n");
                 continue;
             }
-
-            System.out.print("Got base class..." + baseTypeMirror + "\n");
 
             String baseClass = baseTypeMirror.toString();
 
@@ -187,18 +183,6 @@ public class RequestFactoryGenerator extends AbstractProcessor {
         }
 
         for (String baseClass : groupToPackage.keySet()) {
-            /**
-             * public enum Classs {
-             * Action_B(new Integer(1)),
-             * Action_A(new String(""));
-             * <p/>
-             * private Object action;
-             * <p/>
-             * Classs(Object clazz) {
-             * action = clazz;
-             * }
-             * }
-             */
             HashSet<String> groups = groupToPackage.get(baseClass);
             for (String groupId : groups) {
                 TypeSpec typeSpec = builderMap.get(groupId).build();
@@ -240,41 +224,54 @@ public class RequestFactoryGenerator extends AbstractProcessor {
         String className = enumName + "Helper";
         String qualifiedName = packageName + "." + className;
 
-        try {
-            JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(qualifiedName);
-            Writer writer = sourceFile.openWriter();
-            //Custom code for us.
-            writer.write(Joiner.on('\n').join(
-                    "package " + packageName + ";",
-                    "public class " + className + " extends " + baseTypeMirror.toString() + " {",
-                    "{ mTarget=" + groupId + "." + enumName + "; }"
-            ));
-            for (ClassField variable : variables) {
-                String name = variable.name();
-                String kindName;
-                try {
-                    Class k = variable.kind();
-                    kindName = k.getName();
-                } catch (MirroredTypeException mte) {
-                    kindName = mte.getTypeMirror().toString();
-                }
-                writer.write("\npublic " + className + " " + name + "(" + kindName + " value){\n mVariableHolder.putExtra(\"" +name + "\", value);\nreturn this; \n}");
-                writer.write("\npublic " + kindName + " " + name+ "() {\n return (" + kindName + ") get(\""+ name +"\");\n }\n");
+        TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(className)
+                .addModifiers(Modifier.PUBLIC)
+                .superclass(ClassName.bestGuess(baseTypeMirror.toString()))
+                .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC)
+                        .addStatement("mTarget = $L.$L", groupId, enumName).build());
+
+        for (ClassField variable : variables) {
+            String name = variable.name();
+            String kindName;
+            try {
+                Class k = variable.kind();
+                kindName = k.getName();
+            } catch (MirroredTypeException mte) {
+                kindName = mte.getTypeMirror().toString();
             }
-            writer.write("}\n");
-            writer.close();
-
-            char c[] = enumName.toCharArray();
-            c[0] = Character.toLowerCase(c[0]);
-            String methodName = new String(c);
-
-            groupSpec.addMethod(MethodSpec.methodBuilder(methodName)
-                    .addModifiers(Modifier.FINAL, Modifier.PUBLIC, Modifier.STATIC)
-                    .returns(ClassName.bestGuess(qualifiedName)).addStatement(
-                            "return new " + qualifiedName + "()").build());
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to write.", e);
+            typeBuilder.addMethod(MethodSpec.methodBuilder(name).addStatement(
+                    "Object r = get(\"" + name + "\")"
+            ).returns(ClassName.bestGuess(kindName)).addStatement(
+                    "return r == null ? null : (" + kindName + ") r"
+            ).addModifiers(Modifier.PUBLIC).build());
+            typeBuilder.addMethod(MethodSpec.methodBuilder(name).addParameter(
+                    ClassName.bestGuess(kindName), "value"
+            ).returns(ClassName.bestGuess(className)).addStatement(
+                    "mVariableHolder.putExtra(\"" + name + "\", value)"
+            ).addStatement(
+                    "return this"
+            ).addModifiers(Modifier.PUBLIC).build());
         }
+
+        System.out.print("Generating class " + className + "\n");
+
+        try {
+            Writer writer = filer.createSourceFile(packageName + "." + className).openWriter();
+            JavaFile jf = JavaFile.builder(packageName, typeBuilder.build()).build();
+            jf.writeTo(writer);
+            writer.close();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to write class.", e);
+        }
+
+        char c[] = enumName.toCharArray();
+        c[0] = Character.toLowerCase(c[0]);
+        String methodName = new String(c);
+
+        groupSpec.addMethod(MethodSpec.methodBuilder(methodName)
+                .addModifiers(Modifier.FINAL, Modifier.PUBLIC, Modifier.STATIC)
+                .returns(ClassName.bestGuess(qualifiedName)).addStatement(
+                        "return new " + qualifiedName + "()").build());
     }
 
     private void addFactoryMethodToGroupSpec(RequestFactoryWithClass factoryAnnotation,
