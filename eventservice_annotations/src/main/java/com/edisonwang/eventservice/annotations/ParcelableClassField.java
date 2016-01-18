@@ -6,5 +6,6 @@ package com.edisonwang.eventservice.annotations;
 public @interface ParcelableClassField {
     String name();
     Class kind();
-    Class bagger();
+    Class parceler();
+    boolean required() default true;
 }

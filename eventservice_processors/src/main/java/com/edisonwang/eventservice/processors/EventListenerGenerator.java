@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
@@ -51,13 +50,11 @@ public class EventListenerGenerator extends AbstractProcessor {
         NAMES = Collections.unmodifiableSet(set);
     }
 
-    private Filer filer;
     private Messager messager;
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
-        filer = processingEnv.getFiler();
         messager = processingEnv.getMessager();
     }
 
@@ -83,7 +80,7 @@ public class EventListenerGenerator extends AbstractProcessor {
             HashSet<String> events = getAnnotatedClassesVariable(typed, "events", EventProducer.class);
 
             EventProducer eventProducer = typed.getAnnotation(EventProducer.class);
-            for (ResultClassWithVariables resultEvent: eventProducer.generated()) {
+            for (ResultClassWithVariables resultEvent : eventProducer.generated()) {
                 events.add(generateResultClass(typed, resultEvent));
             }
             producerEvents.put(typed.getQualifiedName().toString(), events);
@@ -113,8 +110,8 @@ public class EventListenerGenerator extends AbstractProcessor {
                 writer.write("package " + packageName + ";\n");
                 writer.write("public interface " + eventClassName + " {\n\n");
                 for (String event : listenedToEvents) {
-                    writer.write("public void " + (annotationElement.restrictMainThread() ? "onEventMainThread" : "onEvent") +"(" +
-                            event + " event"+ ");\n\n");
+                    writer.write("public void " + (annotationElement.restrictMainThread() ? "onEventMainThread" : "onEvent") + "(" +
+                            event + " event" + ");\n\n");
                 }
                 writer.write("}\n");
                 writer.close();
@@ -128,14 +125,17 @@ public class EventListenerGenerator extends AbstractProcessor {
 
     private static class ParcelableClassFieldParsed {
 
-        private final String name;
-        private final String kindName;
-        private final String baggerName;
+        public final String name;
+        public final String kindName;
+        public final String parcelerName;
+        public final boolean required;
 
-        public ParcelableClassFieldParsed(String name, String kindName, String baggerName) {
+        public ParcelableClassFieldParsed(String name, String kindName,
+                                          String parcelerName, boolean required) {
             this.name = name;
             this.kindName = kindName;
-            this.baggerName = baggerName;
+            this.parcelerName = parcelerName;
+            this.required = required;
         }
     }
 
@@ -150,22 +150,22 @@ public class EventListenerGenerator extends AbstractProcessor {
         List<ParcelableClassFieldParsed> parsed = new ArrayList<>();
 
         ParcelableClassField[] fields = resultEvent.fields();
-        for (ParcelableClassField field: fields) {
+        for (ParcelableClassField field : fields) {
             String kindName;
             try {
                 kindName = field.kind().toString();
             } catch (MirroredTypeException mte) {
                 kindName = mte.getTypeMirror().toString();
             }
-            String baggerName;
+            String parcelerName;
             try {
-                baggerName = field.bagger().getName();
+                parcelerName = field.parceler().getName();
             } catch (MirroredTypeException mte) {
-                baggerName = mte.getTypeMirror().toString();
+                parcelerName = mte.getTypeMirror().toString();
             }
-            field.name();
 
-            parsed.add(new ParcelableClassFieldParsed(field.name(), kindName, baggerName));
+            parsed.add(new ParcelableClassFieldParsed(field.name(), kindName,
+                    parcelerName, field.required()));
         }
 
         try {
@@ -179,13 +179,35 @@ public class EventListenerGenerator extends AbstractProcessor {
             writer.write("package " + packageName + ";\n");
             writer.write("import android.os.Parcel;\n");
             writer.write("public class " + eventClassName + " extends " + baseTypeMirror.toString() + "  {\n\n");
-            writer.write("public " + eventClassName + "() {}\n\n");
+            int requiredSize = 0;
             for (ParcelableClassFieldParsed p : parsed) {
                 writer.write("public " + p.kindName + " " + p.name + ";\n");
+                if (p.required) {
+                    requiredSize++;
+                }
             }
+            writer.write("\npublic " + eventClassName + "(");
+            int i = 1;
+            for (ParcelableClassFieldParsed p : parsed) {
+                if (p.required) {
+                    writer.write(p.kindName + " " + p.name);
+                    if (i != requiredSize) {
+                        writer.write(", ");
+                    }
+                }
+                i++;
+            }
+            writer.write(") {\n");
+            for (ParcelableClassFieldParsed p : parsed) {
+                if (p.required) {
+                    writer.write("\tthis." + p.name + " = " + p.name + ";\n");
+                }
+            }
+            writer.write("}\n\n");
+
             writer.write("public " + eventClassName + "(Parcel in) {\n");
             for (ParcelableClassFieldParsed p : parsed) {
-                writer.write("this." + p.name + " = (" + p.kindName + ")" + p.baggerName + ".readFromParcel(in, " + p.kindName + ".class );\n");
+                writer.write("\tthis." + p.name + " = (" + p.kindName + ")" + p.parcelerName + ".readFromParcel(in, " + p.kindName + ".class );\n");
             }
             writer.write("}\n");
             writer.write("\n" +
@@ -195,19 +217,19 @@ public class EventListenerGenerator extends AbstractProcessor {
                     "    }\n" +
                     "\n");
             writer.write("" +
-                        "@Override\n" +
-                    "    public void writeToParcel(Parcel dest, int flags) {");
+                    "@Override\n" +
+                    "    public void writeToParcel(Parcel dest, int flags) {\n");
             for (ParcelableClassFieldParsed p : parsed) {
-                writer.write(p.baggerName + ".writeToParcel(this." + p.name + ", dest, flags);\n");
+                writer.write("\t" + p.parcelerName + ".writeToParcel(this." + p.name + ", dest, flags);\n");
             }
             writer.write("}\n");
             writer.write("\n" +
                     "\n" +
                     "    public static final Creator<" + eventClassName + "> CREATOR = " +
-                                                "new Creator<" + eventClassName + ">() {\n" +
+                    "new Creator<" + eventClassName + ">() {\n" +
                     "        @Override\n" +
                     "        public " + eventClassName + " createFromParcel(Parcel in) {\n" +
-                    "            return new " + eventClassName +"(in);\n" +
+                    "            return new " + eventClassName + "(in);\n" +
                     "        }\n" +
                     "\n" +
                     "        @Override\n" +

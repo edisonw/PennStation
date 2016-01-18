@@ -34,11 +34,13 @@ import java.util.Random;
                         @ParcelableClassField(
                                 name = "sampleParam3",
                                 kind = String.class,
-                                bagger = SampleStringParceler.class),
+                                parceler = SampleStringParceler.class),
                         @ParcelableClassField(
                                 name = "sampleParcelable",
                                 kind = ComplicatedAction.SampleParcelable.class,
-                                bagger = ParcelableBagger.class)
+                                parceler = ParcelableBagger.class,
+                                required = false
+                        )
                 }),
 })
 @RequestFactory(
@@ -69,8 +71,7 @@ public class ComplicatedAction implements Action {
             if (sRandom.nextInt() % 2 == 0) {
                 return new SampleActionSuccessEvent(helper.sampleParam(), helper.sampleParamTwo());
             } else {
-                ComplicatedActionEventSample generatedEvent = new ComplicatedActionEventSample();
-                generatedEvent.sampleParam3 = "sampleParam3";
+                ComplicatedActionEventSample generatedEvent = new ComplicatedActionEventSample("sampleParam3");
                 return generatedEvent;
             }
         }
