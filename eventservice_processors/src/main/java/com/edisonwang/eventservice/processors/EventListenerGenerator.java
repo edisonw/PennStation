@@ -5,6 +5,10 @@ import com.edisonwang.eventservice.annotations.EventProducer;
 import com.edisonwang.eventservice.annotations.ParcelableClassField;
 import com.edisonwang.eventservice.annotations.ResultClassWithVariables;
 import com.google.auto.service.AutoService;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -17,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
@@ -27,6 +32,7 @@ import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
@@ -51,10 +57,12 @@ public class EventListenerGenerator extends AbstractProcessor {
     }
 
     private Messager messager;
+    private Filer filer;
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
+        filer = processingEnv.getFiler();
         messager = processingEnv.getMessager();
     }
 
@@ -104,19 +112,19 @@ public class EventListenerGenerator extends AbstractProcessor {
             String originalClassName = typed.getQualifiedName().toString();
             String packageName = packageFromQualifiedName(originalClassName);
 
+            TypeSpec.Builder typeBuilder = TypeSpec.interfaceBuilder(eventClassName).addModifiers(Modifier.PUBLIC);
+            for (String event : listenedToEvents) {
+                typeBuilder.addMethod(MethodSpec.methodBuilder(
+                        (annotationElement.restrictMainThread() ? "onEventMainThread" : "onEvent"))
+                        .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT).addParameter(ClassName.bestGuess(event), "event").build());
+            }
             try {
-                JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(packageName + "." + eventClassName);
-                Writer writer = sourceFile.openWriter();
-                writer.write("package " + packageName + ";\n");
-                writer.write("public interface " + eventClassName + " {\n\n");
-                for (String event : listenedToEvents) {
-                    writer.write("public void " + (annotationElement.restrictMainThread() ? "onEventMainThread" : "onEvent") + "(" +
-                            event + " event" + ");\n\n");
-                }
-                writer.write("}\n");
+                Writer writer = filer.createSourceFile(packageName + "." + eventClassName).openWriter();
+                JavaFile jf = JavaFile.builder(packageName, typeBuilder.build()).build();
+                jf.writeTo(writer);
                 writer.close();
             } catch (IOException e) {
-                throw new IllegalArgumentException("Failed to write.", e);
+                throw new IllegalArgumentException("Failed to write class.", e);
             }
         }
 
