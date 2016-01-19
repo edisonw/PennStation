@@ -108,7 +108,6 @@ public class RequestFactoryGenerator extends AbstractProcessor {
                                 RequestFactory.class.getSimpleName(), classElement.getQualifiedName().toString()));
             }
 
-
             TypeMirror valueTypeMirror = null;
 
             try {
@@ -191,14 +190,19 @@ public class RequestFactoryGenerator extends AbstractProcessor {
     private void addFactoryAndFactoryMethod(RequestFactoryWithVariables anno, TypeElement classElement,
                                             String enumName, TypeSpec.Builder groupSpec, String groupId) {
 
-        TypeMirror baseTypeMirror = null;
+        String baseClassString;
+
         try {
-            anno.baseClass();
+            baseClassString = anno.baseClass().getCanonicalName();
         } catch (MirroredTypeException mte) {
-            baseTypeMirror = mte.getTypeMirror();
+            baseClassString = mte.getTypeMirror().toString();
         }
 
-        if (baseTypeMirror == null) {
+        if (Object.class.getCanonicalName().equals(baseClassString)) {
+            baseClassString = "com.edisonwang.ps.lib.ActionRequestBuilder";
+        }
+
+        if (baseClassString == null) {
             throw new IllegalArgumentException(
                     String.format("baseClass() in @%s for class %s is null or empty! that's not allowed",
                             RequestFactoryWithVariables.class.getSimpleName(), classElement.getQualifiedName().toString()));
@@ -213,7 +217,7 @@ public class RequestFactoryGenerator extends AbstractProcessor {
 
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PUBLIC)
-                .superclass(ClassName.bestGuess(baseTypeMirror.toString()))
+                .superclass(ClassName.bestGuess(baseClassString))
                 .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC)
                         .addStatement("mTarget = $L.$L", groupId, enumName).build());
 

@@ -22,7 +22,7 @@ import com.edisonwang.ps.lib.EventServiceImpl;
         valueType = Action.class,
         group = "Samples"
 )
-@RequestFactoryWithVariables(baseClass = ActionRequestBuilder.class, variables = {})
+@RequestFactoryWithVariables(variables = {})
 public class SimpleAction implements Action {
 
     @Override
