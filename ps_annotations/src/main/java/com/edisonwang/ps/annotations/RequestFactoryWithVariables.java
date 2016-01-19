@@ -15,5 +15,5 @@ import java.lang.annotation.Target;
 public @interface RequestFactoryWithVariables {
     Class baseClass() default Object.class;
 
-    ClassField[] variables();
+    ClassField[] variables() default {};
 }

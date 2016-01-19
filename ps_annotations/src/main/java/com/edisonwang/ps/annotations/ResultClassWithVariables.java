@@ -13,9 +13,9 @@ import java.lang.annotation.Target;
 @Retention(value = RetentionPolicy.CLASS)
 @Inherited
 public @interface ResultClassWithVariables {
-    String classPostFix();
+    String classPostFix() default "";
 
-    Class baseClass();
+    Class baseClass() default Object.class;
 
-    ParcelableClassField[] fields();
+    ParcelableClassField[] fields() default {};
 }

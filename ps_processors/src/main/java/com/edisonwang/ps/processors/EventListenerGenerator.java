@@ -125,11 +125,15 @@ public class EventListenerGenerator extends AbstractProcessor {
     }
 
     private String generateResultClass(TypeElement typed, ResultClassWithVariables resultEvent) {
-        TypeMirror baseTypeMirror = null;
+        String baseClassString;
         try {
-            resultEvent.baseClass();
+            baseClassString = resultEvent.baseClass().getCanonicalName();
         } catch (MirroredTypeException mte) {
-            baseTypeMirror = mte.getTypeMirror();
+            baseClassString = mte.getTypeMirror().toString();
+        }
+
+        if (Object.class.getCanonicalName().equals(baseClassString)) {
+            baseClassString = "com.edisonwang.ps.lib.ActionResult";
         }
 
         List<ParcelableClassFieldParsed> parsed = new ArrayList<>();
@@ -164,13 +168,13 @@ public class EventListenerGenerator extends AbstractProcessor {
             String packageName = packageFromQualifiedName(originalClassName);
             TypeName self = Util.guessTypeName(eventClassName);
 
-            if (baseTypeMirror == null) {
+            if (baseClassString == null) {
                 throw new IllegalStateException("Base type not found.");
             }
 
             TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(eventClassName)
                     .addModifiers(Modifier.PUBLIC)
-                    .superclass(Util.guessTypeName(baseTypeMirror.toString()));
+                    .superclass(Util.guessTypeName(baseClassString));
 
             for (ParcelableClassFieldParsed p : parsed) {
                 typeBuilder.addField(Util.guessTypeName(p.kindName), p.name, Modifier.PUBLIC);
@@ -242,7 +246,7 @@ public class EventListenerGenerator extends AbstractProcessor {
     }
 
     private HashSet<String> getAnnotatedClassesVariable(TypeElement element, String name, Class clazz) {
-        HashSet<String> events = new HashSet<>();
+        HashSet<String> classes = new HashSet<>();
 
         AnnotationMirror am = null;
         List<? extends AnnotationMirror> mirrors = element.getAnnotationMirrors();
@@ -261,13 +265,15 @@ public class EventListenerGenerator extends AbstractProcessor {
             }
         }
 
-        List eventClasses = (List) annotationEventValue.getValue();
-        for (Object c : eventClasses) {
-            String extraLongClassName = c.toString();
-            String regularClassName = extraLongClassName.substring(0, extraLongClassName.length() - ".class".length());
-            events.add(regularClassName);
+        if (annotationEventValue != null) {
+            List eventClasses = (List) annotationEventValue.getValue();
+            for (Object c : eventClasses) {
+                String extraLongClassName = c.toString();
+                String regularClassName = extraLongClassName.substring(0, extraLongClassName.length() - ".class".length());
+                classes.add(regularClassName);
+            }
         }
-        return events;
+        return classes;
     }
 
     private void error(Element e, String msg, Object... args) {

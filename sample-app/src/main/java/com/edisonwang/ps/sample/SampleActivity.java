@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.edisonwang.ps.annotations.EventListener;
+import com.edisonwang.ps.lib.ActionKey_.Actions;
 import com.edisonwang.ps.lib.ActionKey_.Samples;
 import com.edisonwang.ps.lib.EventService;
 import com.edisonwang.ps.lib.PennStation;
@@ -73,7 +74,7 @@ public class SampleActivity extends Activity {
     }
 
     public void testEventRequest(View button) {
-        PennStation.requestAction(Samples.simpleAction().build());
+        PennStation.requestAction(Actions.simpleAction());
         PennStation.requestAction(Samples.complicatedAction().sampleParam("sampleParamOneToFail").sampleParamTwo(
                 new ComplicatedAction.SampleParcelable("FailParcelable")).shouldFail(true)
                 .build());

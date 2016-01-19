@@ -14,13 +14,9 @@ import com.edisonwang.ps.lib.EventServiceImpl;
 /**
  * @author edi
  */
-@EventProducer(events = {}, generated = {
-        @ResultClassWithVariables(classPostFix = "", baseClass = ActionResult.class, fields = {}),
-})
-@RequestFactory(
-        group = "Samples"
-)
-@RequestFactoryWithVariables(variables = {})
+@EventProducer(generated = {@ResultClassWithVariables})
+@RequestFactory
+@RequestFactoryWithVariables
 public class SimpleAction implements Action {
 
     @Override

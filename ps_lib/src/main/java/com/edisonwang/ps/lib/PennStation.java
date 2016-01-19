@@ -57,6 +57,10 @@ public class PennStation {
         getInstance().unRegisterListener(object);
     }
 
+    public static String requestAction(ActionRequestBuilder request) {
+        return getInstance().requestAction(request.build());
+    }
+
     public static String requestAction(ActionRequest request) {
         return getInstance().requestAction(request);
     }
