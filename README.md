@@ -6,7 +6,7 @@
 
 However, as applications scale, you write too many boilerplate code, code gets refactored but not cleaned up, and in the rare case do we want inter-process communication, Event Bus pattern falls short.
 
-Ipes is an interprocess event service library that supports the following usage pattern: 
+PennStation is an inter-process event service library that supports the following usage pattern:
 
  * UI process/thread sends a request to a remote service. 
  * Remote service process the request and sends the result back to the requesting process. (can be extended to broadcast to all bounded processes)
@@ -32,19 +32,19 @@ buildscript {
 }
 apply plugin: 'com.neenbedankt.android-apt'
 apt {
-    processor "com.edisonwang.eventservice.processors.RequestFactoryGenerator"
-    processor "com.edisonwang.eventservice.processors.EventListenerGenerator"
+    processor "com.edisonwang.ps.processors.RequestFactoryGenerator"
+    processor "com.edisonwang.ps.processors.EventListenerGenerator"
 }
 dependencies {
-    apt project(':eventservice_processors')
-    compile project(':eventservice_lib')
+    apt project(':ps_processors')
+    compile project(':ps_lib')
 }
 ```
 
 * Add the following to your AndroidManifest.xml (or extend a new service class), you can also add a :process tag to make it run on a separate process.
 ```xml
         <service
-            android:name="com.edisonwang.eventservice.lib.EventService" />
+            android:name="com.edisonwang.ps.lib.EventService" />
 ```
 * In your custom Application class or Activity.onCreate(), add 
 ```java
@@ -56,8 +56,8 @@ For each action the service needs to perform:
 * Write the actions you want the event service to take. ([Full SampleAction])
 * Tag it with @EventProducer with the events it will emit.
 * Tag it with @RequestFactory so it will be registered.
-* Optional: Tag it with @RequestFactoryWithVariables so convinence factories will be created.
-* Optional: Tag it with @RequestFactoryWithClass so convinence methods will be added.
+* Optional: Tag it with @RequestFactoryWithVariables so convenience factories will be created.
+* Optional: Tag it with @RequestFactoryWithClass soconveniencee methods will be added.
 
 For class that owns [event listeners]:
 

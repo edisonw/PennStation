@@ -1,4 +1,4 @@
-package com.edisonwang.android.ipes;
+package com.edisonwang.ps.sample;
 
 import android.os.Parcel;
 

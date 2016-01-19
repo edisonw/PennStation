@@ -1,24 +1,24 @@
-package com.edisonwang.android.ipes;
+package com.edisonwang.ps.sample;
 
 import android.annotation.SuppressLint;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
 
-import com.edisonwang.eventservice.annotations.EventProducer;
-import com.edisonwang.eventservice.annotations.ParcelableClassField;
-import com.edisonwang.eventservice.annotations.RequestFactory;
-import com.edisonwang.eventservice.annotations.ClassField;
-import com.edisonwang.eventservice.annotations.RequestFactoryWithVariables;
-import com.edisonwang.eventservice.annotations.ResultClassWithVariables;
-import com.edisonwang.eventservice.baggers.ParcelableBagger;
-import com.edisonwang.eventservice.lib.Action;
-import com.edisonwang.eventservice.lib.ActionKey;
-import com.edisonwang.eventservice.lib.ActionKey_.Samples;
-import com.edisonwang.eventservice.lib.ActionRequest;
-import com.edisonwang.eventservice.lib.ActionRequestBuilder;
-import com.edisonwang.eventservice.lib.ActionResult;
-import com.edisonwang.eventservice.lib.EventServiceImpl;
+import com.edisonwang.ps.annotations.EventProducer;
+import com.edisonwang.ps.annotations.ParcelableClassField;
+import com.edisonwang.ps.annotations.RequestFactory;
+import com.edisonwang.ps.annotations.ClassField;
+import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
+import com.edisonwang.ps.annotations.ResultClassWithVariables;
+import com.edisonwang.ps.lib.parcelers.ParcelableParceler;
+import com.edisonwang.ps.lib.Action;
+import com.edisonwang.ps.lib.ActionKey;
+import com.edisonwang.ps.lib.ActionKey_.Samples;
+import com.edisonwang.ps.lib.ActionRequest;
+import com.edisonwang.ps.lib.ActionRequestBuilder;
+import com.edisonwang.ps.lib.ActionResult;
+import com.edisonwang.ps.lib.EventServiceImpl;
 
 import java.util.Random;
 
@@ -38,7 +38,7 @@ import java.util.Random;
                         @ParcelableClassField(
                                 name = "sampleParcelable",
                                 kind = ComplicatedAction.SampleParcelable.class,
-                                parceler = ParcelableBagger.class,
+                                parceler = ParcelableParceler.class,
                                 required = false
                         )
                 }),

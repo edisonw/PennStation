@@ -1,4 +1,4 @@
-package com.edisonwang.eventservice.lib;
+package com.edisonwang.ps.lib;
 
 /**
  * @author edi

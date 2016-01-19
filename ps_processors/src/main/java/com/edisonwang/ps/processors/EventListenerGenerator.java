@@ -1,9 +1,9 @@
-package com.edisonwang.eventservice.processors;
+package com.edisonwang.ps.processors;
 
-import com.edisonwang.eventservice.annotations.EventListener;
-import com.edisonwang.eventservice.annotations.EventProducer;
-import com.edisonwang.eventservice.annotations.ParcelableClassField;
-import com.edisonwang.eventservice.annotations.ResultClassWithVariables;
+import com.edisonwang.ps.annotations.EventListener;
+import com.edisonwang.ps.annotations.EventProducer;
+import com.edisonwang.ps.annotations.ParcelableClassField;
+import com.edisonwang.ps.annotations.ResultClassWithVariables;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;

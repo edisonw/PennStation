@@ -1,4 +1,4 @@
-package com.edisonwang.eventservice.baggers;
+package com.edisonwang.ps.lib.parcelers;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -6,7 +6,7 @@ import android.os.Parcelable;
 /**
  * @author edi
  */
-public class ParcelableBagger {
+public class ParcelableParceler {
 
     public static Parcelable readFromParcel(Parcel in, Class clazz) {
         return in.readParcelable(clazz.getClassLoader());

@@ -1,14 +1,14 @@
-package com.edisonwang.android.ipes;
+package com.edisonwang.ps.sample;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
-import com.edisonwang.eventservice.annotations.EventListener;
-import com.edisonwang.eventservice.lib.ActionKey_.Samples;
-import com.edisonwang.eventservice.lib.EventService;
-import com.edisonwang.eventservice.lib.PennStation;
+import com.edisonwang.ps.annotations.EventListener;
+import com.edisonwang.ps.lib.ActionKey_.Samples;
+import com.edisonwang.ps.lib.EventService;
+import com.edisonwang.ps.lib.PennStation;
 
 @EventListener(producers = {
         ComplicatedAction.class,

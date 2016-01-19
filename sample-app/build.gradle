@@ -31,8 +31,8 @@ android {
 }
 
 apt {
-    processor "com.edisonwang.eventservice.processors.RequestFactoryGenerator"
-    processor "com.edisonwang.eventservice.processors.EventListenerGenerator"
+    processor "com.edisonwang.ps.processors.RequestFactoryGenerator"
+    processor "com.edisonwang.ps.processors.EventListenerGenerator"
 }
 
 dependencies {

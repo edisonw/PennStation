@@ -1,11 +1,11 @@
-package com.edisonwang.eventservice.baggers;
+package com.edisonwang.ps.lib.parcelers;
 
 import android.os.Parcel;
 
 /**
  * @author edi
  */
-public class IntegerBagger {
+public class IntegerParceler {
 
     public static int readFromParcel(Parcel in, Class clazz) {
         return in.readInt();
