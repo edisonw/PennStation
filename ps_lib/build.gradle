@@ -19,6 +19,6 @@ android {
 }
 
 dependencies {
-    compile project(":eventservice_annotations")
+    compile project(':ps_annotations')
     compile 'de.greenrobot:eventbus:2.4.0'
 }

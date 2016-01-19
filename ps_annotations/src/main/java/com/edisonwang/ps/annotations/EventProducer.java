@@ -1,4 +1,4 @@
-package com.edisonwang.eventservice.annotations;
+package com.edisonwang.ps.annotations;
 
 
 import java.lang.annotation.ElementType;

@@ -1,4 +1,4 @@
-package com.edisonwang.eventservice.annotations;
+package com.edisonwang.ps.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -12,8 +12,7 @@ import java.lang.annotation.Target;
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.CLASS)
 @Inherited
-public @interface RequestFactory {
+public @interface RequestFactoryWithVariables {
     Class baseClass();
-    Class valueType();
-    String group();
+    ClassField[] variables();
 }

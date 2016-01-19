@@ -1,1 +1,1 @@
-include ':sample-app', ':eventservice_lib', ':eventservice_annotations', ':eventservice_processors'
+include ':sample-app', ':ps_lib', ':ps_annotations', ':ps_processors'

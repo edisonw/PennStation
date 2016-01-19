@@ -36,6 +36,6 @@ apt {
 }
 
 dependencies {
-    apt project(':eventservice_processors')
-    compile project(':eventservice_lib')
+    apt project(':ps_processors')
+    compile project(':ps_lib')
 }
