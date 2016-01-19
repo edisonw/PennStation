@@ -31,8 +31,7 @@ android {
 }
 
 apt {
-    processor "com.edisonwang.ps.processors.RequestFactoryGenerator"
-    processor "com.edisonwang.ps.processors.EventListenerGenerator"
+    processor "com.edisonwang.ps.processors.PennStationProcessor"
 }
 
 dependencies {

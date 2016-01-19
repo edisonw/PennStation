@@ -1,22 +1,33 @@
 package com.edisonwang.ps.processors;
 
 import com.edisonwang.ps.annotations.ClassField;
+import com.edisonwang.ps.annotations.EventListener;
+import com.edisonwang.ps.annotations.EventProducer;
+import com.edisonwang.ps.annotations.ParcelableClassField;
 import com.edisonwang.ps.annotations.RequestFactory;
 import com.edisonwang.ps.annotations.RequestFactoryWithClass;
 import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
+import com.edisonwang.ps.annotations.ResultClassWithVariables;
 import com.google.auto.service.AutoService;
 import com.google.common.base.Joiner;
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,8 +38,11 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.MirroredTypeException;
@@ -36,20 +50,20 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 
 /**
- * Annotated Class -> Groups of classes.
- *
  * @author edi
  */
 @AutoService(Processor.class)
-public class RequestFactoryGenerator extends AbstractProcessor {
+public class PennStationProcessor extends AbstractProcessor {
 
     private static final Set<String> NAMES;
 
     static {
-        HashSet<String> set = new HashSet<>(1);
+        HashSet<String> set = new HashSet<>();
         set.add(RequestFactory.class.getCanonicalName());
         set.add(RequestFactoryWithClass.class.getCanonicalName());
         set.add(RequestFactoryWithVariables.class.getCanonicalName());
+        set.add(EventListener.class.getCanonicalName());
+        set.add(EventProducer.class.getCanonicalName());
         set.add(ClassField.class.getCanonicalName());
         NAMES = Collections.unmodifiableSet(set);
     }
@@ -76,6 +90,10 @@ public class RequestFactoryGenerator extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        return processEventProducersAndListeners(roundEnv) || processRequestFactory(roundEnv);
+    }
+
+    private boolean processRequestFactory(RoundEnvironment roundEnv) {
         Map<String, TypeSpec.Builder> builderMap = new LinkedHashMap<>();
         Map<String, HashSet<String>> groupToPackage = new HashMap<>();
         // Iterate over all @Factory annotated elements
@@ -190,7 +208,7 @@ public class RequestFactoryGenerator extends AbstractProcessor {
         for (String baseClass : groupToPackage.keySet()) {
             HashSet<String> groups = groupToPackage.get(baseClass);
             for (String groupId : groups) {
-                Util.writeClass(groupId, builderMap.get(groupId).build(), filer);
+                writeClass(groupId, builderMap.get(groupId).build(), filer);
             }
         }
 
@@ -267,7 +285,7 @@ public class RequestFactoryGenerator extends AbstractProcessor {
             } catch (MirroredTypeException mte) {
                 kindName = mte.getTypeMirror().toString();
             }
-            TypeName kindClassName = Util.guessTypeName(kindName);
+            TypeName kindClassName = guessTypeName(kindName);
             if (variable.required()) {
                 requiredNames.add(name);
                 ctr.addParameter(ParameterSpec.builder(kindClassName, name).build());
@@ -290,7 +308,7 @@ public class RequestFactoryGenerator extends AbstractProcessor {
 
         typeBuilder.addMethod(ctr.build());
 
-        Util.writeClass(packageName, className, typeBuilder.build(), filer);
+        writeClass(packageName, className, typeBuilder.build(), filer);
 
         factoryMethod.addStatement("return new " + qualifiedName + "(" + Joiner.on(",").join(requiredNames) + ")");
 
@@ -329,6 +347,272 @@ public class RequestFactoryGenerator extends AbstractProcessor {
                 Diagnostic.Kind.ERROR,
                 String.format(msg, args),
                 e);
+    }
+
+    private boolean processEventProducersAndListeners(RoundEnvironment roundEnv) {
+        HashMap<String, HashSet<String>> producerEvents = new HashMap<>();
+        for (Element element : roundEnv.getElementsAnnotatedWith(EventProducer.class)) {
+            if (element.getKind() != ElementKind.CLASS) {
+                error(element, "You cannot annotate " + element.getSimpleName() + " with " + EventProducer.class);
+                return true;
+            }
+            TypeElement typed = (TypeElement) element;
+            HashSet<String> events = getAnnotatedClassesVariable(typed, "events", EventProducer.class);
+
+            EventProducer eventProducer = typed.getAnnotation(EventProducer.class);
+            for (ResultClassWithVariables resultEvent : eventProducer.generated()) {
+                events.add(generateResultClass(typed, resultEvent));
+            }
+            producerEvents.put(typed.getQualifiedName().toString(), events);
+        }
+
+        for (Element element : roundEnv.getElementsAnnotatedWith(EventListener.class)) {
+            TypeElement typed = (TypeElement) element;
+            EventListener annotationElement = typed.getAnnotation(EventListener.class);
+            HashSet<String> producers = getAnnotatedClassesVariable(typed, "producers", EventListener.class);
+            HashSet<String> listenedToEvents = new HashSet<>();
+            for (String producer : producers) {
+                HashSet<String> events = producerEvents.get(producer);
+                if (events == null) {
+                    error(element, "Producer not registered, have you annotated it? ");
+                    return true;
+                }
+                listenedToEvents.addAll(events);
+            }
+
+            String listenerClassName = typed.getSimpleName().toString() + EventListener.class.getSimpleName();
+            String originalClassName = typed.getQualifiedName().toString();
+            String packageName = packageFromQualifiedName(originalClassName);
+
+            TypeSpec.Builder typeBuilder = TypeSpec.interfaceBuilder(listenerClassName).addModifiers(Modifier.PUBLIC);
+            for (String event : listenedToEvents) {
+                typeBuilder.addMethod(MethodSpec.methodBuilder(
+                        (annotationElement.restrictMainThread() ? "onEventMainThread" : "onEvent"))
+                        .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT).addParameter(guessTypeName(event), "event").build());
+            }
+            writeClass(packageName, listenerClassName, typeBuilder.build(), filer);
+        }
+
+        return false;
+    }
+
+    private String generateResultClass(TypeElement typed, ResultClassWithVariables resultEvent) {
+        String baseClassString;
+        try {
+            baseClassString = resultEvent.baseClass().getCanonicalName();
+        } catch (MirroredTypeException mte) {
+            baseClassString = mte.getTypeMirror().toString();
+        }
+
+        if (Object.class.getCanonicalName().equals(baseClassString)) {
+            baseClassString = "com.edisonwang.ps.lib.ActionResult";
+        }
+
+        List<ParcelableClassFieldParsed> parsed = new ArrayList<>();
+
+        ParcelableClassField[] fields = resultEvent.fields();
+        for (ParcelableClassField field : fields) {
+            String kindName;
+            try {
+                kindName = field.kind().toString();
+            } catch (MirroredTypeException mte) {
+                kindName = mte.getTypeMirror().toString();
+            }
+            String parcelerName;
+            try {
+                parcelerName = field.parceler().getCanonicalName();
+            } catch (MirroredTypeException mte) {
+                parcelerName = mte.getTypeMirror().toString();
+            }
+
+            if (parcelerName.equals(Object.class.getCanonicalName())) {
+                parcelerName = "com.edisonwang.ps.lib.parcelers.DefaultParceler";
+            }
+
+            parsed.add(new ParcelableClassFieldParsed(field.name(), kindName,
+                    parcelerName, field.required()));
+        }
+
+        try {
+            String eventClassName = typed.getSimpleName().toString() + "Event" +
+                    resultEvent.classPostFix();
+            String originalClassName = typed.getQualifiedName().toString();
+            String packageName = packageFromQualifiedName(originalClassName);
+            TypeName self = guessTypeName(eventClassName);
+
+            if (baseClassString == null) {
+                throw new IllegalStateException("Base type not found.");
+            }
+
+            TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(eventClassName)
+                    .addModifiers(Modifier.PUBLIC)
+                    .superclass(guessTypeName(baseClassString));
+
+            for (ParcelableClassFieldParsed p : parsed) {
+                typeBuilder.addField(guessTypeName(p.kindName), p.name, Modifier.PUBLIC);
+            }
+
+            MethodSpec.Builder ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
+
+            for (ParcelableClassFieldParsed p : parsed) {
+                if (p.required) {
+                    ctr.addParameter(guessTypeName(p.kindName), p.name);
+                    ctr.addStatement("this.$L = $L", p.name, p.name);
+                }
+            }
+            typeBuilder.addMethod(ctr.build());
+
+            ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
+            ctr.addParameter(guessTypeName("android.os.Parcel"), "in");
+            for (ParcelableClassFieldParsed p : parsed) {
+                ctr.addStatement("\tthis." + p.name + " = (" + p.kindName + ")" + p.parcelerName + ".readFromParcel(in, " + p.kindName + ".class)");
+            }
+            typeBuilder.addMethod(ctr.build());
+            typeBuilder.addMethod(MethodSpec.methodBuilder("describeContents")
+                    .returns(int.class)
+                    .addStatement("return 0")
+                    .addModifiers(Modifier.PUBLIC).build());
+
+            MethodSpec.Builder writeToParcel = MethodSpec.methodBuilder("writeToParcel")
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(guessTypeName("android.os.Parcel"), "dest")
+                    .addParameter(TypeName.INT, "flags");
+            for (ParcelableClassFieldParsed p : parsed) {
+                writeToParcel.addStatement("$L.writeToParcel(this.$L, dest, flags)", p.parcelerName, p.name);
+            }
+
+            typeBuilder.addMethod(writeToParcel.build());
+
+            ClassName creatorClassName = ClassName.bestGuess("android.os.Parcelable.Creator");
+
+            TypeSpec creator = TypeSpec.anonymousClassBuilder("")
+                    .addSuperinterface(ParameterizedTypeName.get(creatorClassName, self))
+                    .addMethod(MethodSpec.methodBuilder("createFromParcel")
+                            .addModifiers(Modifier.PUBLIC)
+                            .returns(self)
+                            .addParameter(guessTypeName("android.os.Parcel"), "in")
+                            .addStatement("return new $L(in)", eventClassName)
+                            .build())
+                    .addMethod(MethodSpec.methodBuilder("newArray")
+                            .addModifiers(Modifier.PUBLIC)
+                            .returns(ArrayTypeName.of(self))
+                            .addParameter(TypeName.INT, "size")
+                            .addStatement("return new $L[size]", eventClassName)
+                            .build()
+                    ).build();
+
+            typeBuilder.addField(FieldSpec.builder(ParameterizedTypeName.get(creatorClassName, self),
+                    "CREATOR", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                    .initializer("$L", creator).build());
+
+            writeClass(packageName, eventClassName, typeBuilder.build(), filer);
+
+            return packageName + "." + eventClassName;
+        } catch (Throwable e) {
+            throw new IllegalArgumentException("Failed to write.", e);
+        }
+    }
+
+    private String packageFromQualifiedName(String originalClassName) {
+        return originalClassName.substring(0, originalClassName.lastIndexOf("."));
+    }
+
+    private HashSet<String> getAnnotatedClassesVariable(TypeElement element, String name, Class clazz) {
+        HashSet<String> classes = new HashSet<>();
+
+        AnnotationMirror am = null;
+        List<? extends AnnotationMirror> mirrors = element.getAnnotationMirrors();
+        for (AnnotationMirror mirror : mirrors) {
+            if (mirror.getAnnotationType().toString().equals(clazz.getCanonicalName())) {
+                am = mirror;
+                break;
+            }
+        }
+        AnnotationValue annotationEventValue = null;
+
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : am.getElementValues().entrySet()) {
+            if (name.equals(entry.getKey().getSimpleName().toString())) {
+                annotationEventValue = entry.getValue();
+                break;
+            }
+        }
+
+        if (annotationEventValue != null) {
+            List eventClasses = (List) annotationEventValue.getValue();
+            for (Object c : eventClasses) {
+                String extraLongClassName = c.toString();
+                String regularClassName = extraLongClassName.substring(0, extraLongClassName.length() - ".class".length());
+                classes.add(regularClassName);
+            }
+        }
+        return classes;
+    }
+
+    public static TypeName guessTypeName(String classNameString) {
+        if (double.class.getName().equals(classNameString)) {
+            return TypeName.DOUBLE;
+        } else if (int.class.getName().equals(classNameString)) {
+            return TypeName.INT;
+        } else if (boolean.class.getName().equals(classNameString)) {
+            return TypeName.BOOLEAN;
+        } else if (float.class.getName().equals(classNameString)) {
+            return TypeName.FLOAT;
+        } else if (byte.class.getName().equals(classNameString)) {
+            return TypeName.BYTE;
+        } else if (char.class.getName().equals(classNameString)) {
+            return TypeName.CHAR;
+        } else if (long.class.getName().equals(classNameString)) {
+            return TypeName.LONG;
+        } else if (short.class.getName().equals(classNameString)) {
+            return TypeName.SHORT;
+        }
+        return ClassName.bestGuess(classNameString);
+    }
+
+    public static void writeClass(String path,
+                                  TypeSpec typeSpec,
+                                  Filer filer) {
+        writeClass(
+                path,
+                filer,
+                JavaFile.builder(path.substring(0, path.lastIndexOf(".")), typeSpec).build());
+    }
+
+    private static void writeClass(String path, Filer filer, JavaFile jf) {
+        try {
+            Writer writer = filer.createSourceFile(path).openWriter();
+            jf.writeTo(writer);
+            writer.close();
+            System.out.println("Generated " + path);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to generate class: " + path, e);
+        }
+    }
+
+    public static void writeClass(String packageName,
+                                  String className,
+                                  TypeSpec typeSpec,
+                                  Filer filer) {
+        writeClass(
+                packageName + "." + className,
+                filer,
+                JavaFile.builder(packageName, typeSpec).build());
+    }
+
+    private static class ParcelableClassFieldParsed {
+
+        public final String name;
+        public final String kindName;
+        public final String parcelerName;
+        public final boolean required;
+
+        public ParcelableClassFieldParsed(String name, String kindName,
+                                          String parcelerName, boolean required) {
+            this.name = name;
+            this.kindName = kindName;
+            this.parcelerName = parcelerName;
+            this.required = required;
+        }
     }
 
 }

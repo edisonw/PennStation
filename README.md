@@ -32,8 +32,7 @@ buildscript {
 }
 apply plugin: 'com.neenbedankt.android-apt'
 apt {
-    processor "com.edisonwang.ps.processors.RequestFactoryGenerator"
-    processor "com.edisonwang.ps.processors.EventListenerGenerator"
+    processor "com.edisonwang.ps.processors.PennStationProcessor"
 }
 dependencies {
     apt project(':ps_processors')
