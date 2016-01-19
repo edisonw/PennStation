@@ -122,14 +122,7 @@ public class EventListenerGenerator extends AbstractProcessor {
                         (annotationElement.restrictMainThread() ? "onEventMainThread" : "onEvent"))
                         .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT).addParameter(Util.guessTypeName(event), "event").build());
             }
-            try {
-                Writer writer = filer.createSourceFile(packageName + "." + listenerClassName).openWriter();
-                JavaFile jf = JavaFile.builder(packageName, typeBuilder.build()).build();
-                jf.writeTo(writer);
-                writer.close();
-            } catch (IOException e) {
-                throw new IllegalArgumentException("Failed to write class.", e);
-            }
+            Util.writeClass(packageName, listenerClassName, typeBuilder.build(), filer);
         }
 
         return true;
@@ -179,8 +172,6 @@ public class EventListenerGenerator extends AbstractProcessor {
             if (parcelerName.equals(Object.class.getCanonicalName())) {
                 parcelerName = "com.edisonwang.ps.lib.parcelers.DefaultParceler";
             }
-
-            System.out.println("Found parceler: " + parcelerName);
 
             parsed.add(new ParcelableClassFieldParsed(field.name(), kindName,
                     parcelerName, field.required()));
@@ -258,15 +249,7 @@ public class EventListenerGenerator extends AbstractProcessor {
                     "CREATOR", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
                     .initializer("$L", creator).build());
 
-            try {
-                Writer writer = filer.createSourceFile(packageName + "." + eventClassName).openWriter();
-                JavaFile jf = JavaFile.builder(packageName, typeBuilder.build()).build();
-                jf.writeTo(writer);
-                writer.close();
-            } catch (IOException e) {
-                throw new IllegalArgumentException("Failed to write class.", e);
-            }
-
+            Util.writeClass(packageName, eventClassName, typeBuilder.build(), filer);
 
             return packageName + "." + eventClassName;
         } catch (Throwable e) {

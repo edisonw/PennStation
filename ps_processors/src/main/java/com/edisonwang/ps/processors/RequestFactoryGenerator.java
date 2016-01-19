@@ -6,13 +6,10 @@ import com.edisonwang.ps.annotations.RequestFactoryWithClass;
 import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
-import java.io.IOException;
-import java.io.Writer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -184,16 +181,7 @@ public class RequestFactoryGenerator extends AbstractProcessor {
         for (String baseClass : groupToPackage.keySet()) {
             HashSet<String> groups = groupToPackage.get(baseClass);
             for (String groupId : groups) {
-                TypeSpec typeSpec = builderMap.get(groupId).build();
-                System.out.print("Generating class " + groupId + "\n");
-                try {
-                    Writer writer = filer.createSourceFile(groupId).openWriter();
-                    JavaFile jf = JavaFile.builder(groupId.substring(0, groupId.lastIndexOf(".")), typeSpec).build();
-                    jf.writeTo(writer);
-                    writer.close();
-                } catch (IOException e) {
-                    throw new IllegalArgumentException("Failed to write class.", e);
-                }
+                Util.writeClass(groupId, builderMap.get(groupId).build(), filer);
             }
         }
 
@@ -252,16 +240,7 @@ public class RequestFactoryGenerator extends AbstractProcessor {
             ).addModifiers(Modifier.PUBLIC).build());
         }
 
-        System.out.print("Generating class " + className + "\n");
-
-        try {
-            Writer writer = filer.createSourceFile(packageName + "." + className).openWriter();
-            JavaFile jf = JavaFile.builder(packageName, typeBuilder.build()).build();
-            jf.writeTo(writer);
-            writer.close();
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to write class.", e);
-        }
+        Util.writeClass(packageName, className, typeBuilder.build(), filer);
 
         char c[] = enumName.toCharArray();
         c[0] = Character.toLowerCase(c[0]);
