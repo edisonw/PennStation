@@ -95,49 +95,56 @@ public class RequestFactoryGenerator extends AbstractProcessor {
                                 RequestFactory.class.getSimpleName(), classElement.getQualifiedName().toString()));
             }
 
-            TypeMirror baseTypeMirror = null;
+            String baseClassString;
+
             try {
-                annotationElement.baseClass();
+                baseClassString = annotationElement.baseClass().getCanonicalName();
             } catch (MirroredTypeException mte) {
-                baseTypeMirror = mte.getTypeMirror();
+                baseClassString = mte.getTypeMirror().toString();
             }
 
-            if (baseTypeMirror == null) {
+            if (Object.class.getCanonicalName().equals(baseClassString)) {
+                baseClassString = "com.edisonwang.ps.lib.ActionKey";
+            }
+
+            if (baseClassString == null) {
                 throw new IllegalArgumentException(
                         String.format("valueType() in @%s for class %s is null or empty! that's not allowed",
                                 RequestFactory.class.getSimpleName(), classElement.getQualifiedName().toString()));
             }
 
-            TypeMirror valueTypeMirror = null;
+            String valueClassString;
 
             try {
-                annotationElement.valueType();
+                valueClassString = annotationElement.valueType().getCanonicalName();
             } catch (MirroredTypeException mte) {
-                valueTypeMirror = mte.getTypeMirror();
+                valueClassString = mte.getTypeMirror().toString();
             }
 
-            if (valueTypeMirror == null) {
+            if (valueClassString == null) {
                 throw new IllegalArgumentException(
                         String.format("valueType() in @%s for class %s is null or empty! that's not allowed",
                                 RequestFactory.class.getSimpleName(), classElement.getQualifiedName().toString()));
             }
 
-            TypeName baseClassType = TypeName.get(baseTypeMirror);
-            TypeName valueClassType = TypeName.get(valueTypeMirror);
+            if (Object.class.getCanonicalName().equals(valueClassString)) {
+                valueClassString = "com.edisonwang.ps.lib.Action";
+            }
+
+            TypeName baseClassType = ClassName.bestGuess(baseClassString);
+            TypeName valueClassType = ClassName.bestGuess(valueClassString);
 
             if (valueClassType.toString().equals(classElement.getQualifiedName().toString())) {
                 continue;
             }
 
-            String baseClass = baseTypeMirror.toString();
+            String groupId = baseClassString + "_." + group;
 
-            String groupId = baseClass + "_." + group;
-
-            HashSet<String> packageGroups = groupToPackage.get(baseTypeMirror.toString());
+            HashSet<String> packageGroups = groupToPackage.get(baseClassString);
 
             if (packageGroups == null) {
                 packageGroups = new HashSet<>();
-                groupToPackage.put(baseClass, packageGroups);
+                groupToPackage.put(baseClassString, packageGroups);
             }
 
             packageGroups.add(groupId);

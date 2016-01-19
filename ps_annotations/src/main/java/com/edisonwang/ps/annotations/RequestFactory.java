@@ -13,9 +13,10 @@ import java.lang.annotation.Target;
 @Retention(value = RetentionPolicy.CLASS)
 @Inherited
 public @interface RequestFactory {
-    Class baseClass();
 
-    Class valueType();
+    Class baseClass() default Object.class; //Action.java
+
+    Class valueType() default Object.class; //ActionKey.java
 
     String group();
 }

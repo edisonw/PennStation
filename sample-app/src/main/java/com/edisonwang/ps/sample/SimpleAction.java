@@ -18,8 +18,6 @@ import com.edisonwang.ps.lib.EventServiceImpl;
         @ResultClassWithVariables(classPostFix = "", baseClass = ActionResult.class, fields = {}),
 })
 @RequestFactory(
-        baseClass = ActionKey.class,
-        valueType = Action.class,
         group = "Samples"
 )
 @RequestFactoryWithVariables(variables = {})
