@@ -55,7 +55,7 @@ import java.util.Random;
 @RequestFactoryWithVariables(baseClass = ActionRequestBuilder.class, variables = {
         @ClassField(name = "sampleParam", kind = String.class),
         @ClassField(name = "sampleParamTwo", kind = ComplicatedAction.SampleParcelable.class),
-        @ClassField(name = "shouldFail", kind = Boolean.class)
+        @ClassField(name = "shouldFail", kind = boolean.class)
 }
 )
 public class ComplicatedAction implements Action {
@@ -66,8 +66,7 @@ public class ComplicatedAction implements Action {
 
     @Override
     public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest) {
-        ComplicatedActionHelper helper = Samples.complicatedAction();
-        helper.setVariableValues(actionRequest.getArguments(getCurrentClassLoader()));
+        ComplicatedActionHelper helper = Samples.complicatedAction(actionRequest.getArguments(getCurrentClassLoader()));
         Log.i(TAG, "Processing requestAction " + helper.sampleParamTwo().mTestName);
         if (helper.shouldFail()) {
             return new SampleActionFailedEvent(helper.sampleParam(), helper.sampleParamTwo());

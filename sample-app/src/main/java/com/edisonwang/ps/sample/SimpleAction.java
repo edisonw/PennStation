@@ -5,16 +5,16 @@ import com.edisonwang.ps.annotations.RequestFactory;
 import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
 import com.edisonwang.ps.annotations.ResultClassWithVariables;
 import com.edisonwang.ps.lib.Action;
-import com.edisonwang.ps.lib.ActionKey;
 import com.edisonwang.ps.lib.ActionRequest;
-import com.edisonwang.ps.lib.ActionRequestBuilder;
 import com.edisonwang.ps.lib.ActionResult;
 import com.edisonwang.ps.lib.EventServiceImpl;
 
 /**
  * @author edi
  */
-@EventProducer(generated = {@ResultClassWithVariables})
+@EventProducer(generated = {
+        @ResultClassWithVariables
+})
 @RequestFactory
 @RequestFactoryWithVariables
 public class SimpleAction implements Action {

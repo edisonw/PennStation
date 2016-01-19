@@ -5,11 +5,14 @@ import com.edisonwang.ps.annotations.RequestFactory;
 import com.edisonwang.ps.annotations.RequestFactoryWithClass;
 import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
 import com.google.auto.service.AutoService;
+import com.google.common.base.Joiner;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -224,26 +227,60 @@ public class RequestFactoryGenerator extends AbstractProcessor {
 
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PUBLIC)
-                .superclass(ClassName.bestGuess(baseClassString))
-                .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC)
-                        .addStatement("mTarget = $L.$L", groupId, enumName).build());
+                .superclass(ClassName.bestGuess(baseClassString));
+
+        MethodSpec.Builder ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
+
+        ctr.addStatement("mTarget = $L.$L", groupId, enumName).build();
+
+        char c[] = enumName.toCharArray();
+        c[0] = Character.toLowerCase(c[0]);
+        String methodName = new String(c);
+
+        if (variables.length != 0) {
+            ParameterSpec valuesParam = ParameterSpec.builder(
+                    ClassName.bestGuess("android.os.Bundle"), "values").build();
+            typeBuilder.addMethod(
+                    MethodSpec.constructorBuilder().
+                            addModifiers(Modifier.PUBLIC).addParameter(valuesParam)
+                            .addStatement("mTarget = $L.$L", groupId, enumName)
+                            .addStatement("setVariableValues(values)")
+                            .build());
+            groupSpec.addMethod(MethodSpec.methodBuilder(methodName)
+                    .addModifiers(Modifier.FINAL, Modifier.PUBLIC, Modifier.STATIC)
+                    .addParameter(valuesParam)
+                    .returns(ClassName.bestGuess(qualifiedName)).
+                            addStatement("return new " + qualifiedName + "(values)").build());
+        }
+
+        ArrayList<String> requiredNames = new ArrayList<>();
+
+        MethodSpec.Builder factoryMethod = MethodSpec.methodBuilder(methodName)
+                .addModifiers(Modifier.FINAL, Modifier.PUBLIC, Modifier.STATIC)
+                .returns(ClassName.bestGuess(qualifiedName));
 
         for (ClassField variable : variables) {
             String name = variable.name();
             String kindName;
             try {
-                Class k = variable.kind();
-                kindName = k.getName();
+                kindName = variable.kind().getCanonicalName();
             } catch (MirroredTypeException mte) {
                 kindName = mte.getTypeMirror().toString();
             }
+            TypeName kindClassName = Util.guessTypeName(kindName);
+            if (variable.required()) {
+                requiredNames.add(name);
+                ctr.addParameter(ParameterSpec.builder(kindClassName, name).build());
+                ctr.addStatement("mVariableHolder.putExtra(\"$L\", $L)", name, name);
+                factoryMethod.addParameter(ParameterSpec.builder(kindClassName, name).build());
+            }
             typeBuilder.addMethod(MethodSpec.methodBuilder(name).addStatement(
                     "Object r = get(\"" + name + "\")"
-            ).returns(ClassName.bestGuess(kindName)).addStatement(
+            ).returns(kindClassName).addStatement(
                     "return r == null ? null : (" + kindName + ") r"
             ).addModifiers(Modifier.PUBLIC).build());
             typeBuilder.addMethod(MethodSpec.methodBuilder(name).addParameter(
-                    ClassName.bestGuess(kindName), "value"
+                    kindClassName, "value"
             ).returns(ClassName.bestGuess(className)).addStatement(
                     "mVariableHolder.putExtra(\"" + name + "\", value)"
             ).addStatement(
@@ -251,16 +288,13 @@ public class RequestFactoryGenerator extends AbstractProcessor {
             ).addModifiers(Modifier.PUBLIC).build());
         }
 
+        typeBuilder.addMethod(ctr.build());
+
         Util.writeClass(packageName, className, typeBuilder.build(), filer);
 
-        char c[] = enumName.toCharArray();
-        c[0] = Character.toLowerCase(c[0]);
-        String methodName = new String(c);
+        factoryMethod.addStatement("return new " + qualifiedName + "(" + Joiner.on(",").join(requiredNames) + ")");
 
-        groupSpec.addMethod(MethodSpec.methodBuilder(methodName)
-                .addModifiers(Modifier.FINAL, Modifier.PUBLIC, Modifier.STATIC)
-                .returns(ClassName.bestGuess(qualifiedName)).addStatement(
-                        "return new " + qualifiedName + "()").build());
+        groupSpec.addMethod(factoryMethod.build());
     }
 
     private void addFactoryMethodToGroupSpec(RequestFactoryWithClass factoryAnnotation,
