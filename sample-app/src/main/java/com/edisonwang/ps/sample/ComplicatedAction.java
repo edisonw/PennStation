@@ -40,6 +40,10 @@ import java.util.Random;
                                 kind = ComplicatedAction.SampleParcelable.class,
                                 parceler = ParcelableParceler.class,
                                 required = false
+                        ),
+                        @ParcelableClassField(
+                                name = "defaultParcelable",
+                                kind = double.class
                         )
                 }),
 })
@@ -71,8 +75,7 @@ public class ComplicatedAction implements Action {
             if (sRandom.nextInt() % 2 == 0) {
                 return new SampleActionSuccessEvent(helper.sampleParam(), helper.sampleParamTwo());
             } else {
-                ComplicatedActionEventSample generatedEvent = new ComplicatedActionEventSample("sampleParam3");
-                return generatedEvent;
+                return new ComplicatedActionEventSample("sampleParam3", 0);
             }
         }
     }

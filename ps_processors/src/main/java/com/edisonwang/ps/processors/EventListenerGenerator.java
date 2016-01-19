@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -119,7 +120,7 @@ public class EventListenerGenerator extends AbstractProcessor {
             for (String event : listenedToEvents) {
                 typeBuilder.addMethod(MethodSpec.methodBuilder(
                         (annotationElement.restrictMainThread() ? "onEventMainThread" : "onEvent"))
-                        .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT).addParameter(ClassName.bestGuess(event), "event").build());
+                        .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT).addParameter(Util.guessTypeName(event), "event").build());
             }
             try {
                 Writer writer = filer.createSourceFile(packageName + "." + listenerClassName).openWriter();
@@ -170,10 +171,16 @@ public class EventListenerGenerator extends AbstractProcessor {
             }
             String parcelerName;
             try {
-                parcelerName = field.parceler().getName();
+                parcelerName = field.parceler().getCanonicalName();
             } catch (MirroredTypeException mte) {
                 parcelerName = mte.getTypeMirror().toString();
             }
+
+            if (parcelerName.equals(Object.class.getCanonicalName())) {
+                parcelerName = "com.edisonwang.ps.lib.parcelers.DefaultParceler";
+            }
+
+            System.out.println("Found parceler: " + parcelerName);
 
             parsed.add(new ParcelableClassFieldParsed(field.name(), kindName,
                     parcelerName, field.required()));
@@ -184,7 +191,7 @@ public class EventListenerGenerator extends AbstractProcessor {
                     resultEvent.classPostFix();
             String originalClassName = typed.getQualifiedName().toString();
             String packageName = packageFromQualifiedName(originalClassName);
-            ClassName self = ClassName.bestGuess(eventClassName);
+            TypeName self = Util.guessTypeName(eventClassName);
 
             if (baseTypeMirror == null) {
                 throw new IllegalStateException("Base type not found.");
@@ -192,24 +199,24 @@ public class EventListenerGenerator extends AbstractProcessor {
 
             TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(eventClassName)
                     .addModifiers(Modifier.PUBLIC)
-                    .superclass(ClassName.bestGuess(baseTypeMirror.toString()));
+                    .superclass(Util.guessTypeName(baseTypeMirror.toString()));
 
             for (ParcelableClassFieldParsed p : parsed) {
-                typeBuilder.addField(ClassName.bestGuess(p.kindName), p.name, Modifier.PUBLIC);
+                typeBuilder.addField(Util.guessTypeName(p.kindName), p.name, Modifier.PUBLIC);
             }
 
             MethodSpec.Builder ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
 
             for (ParcelableClassFieldParsed p : parsed) {
                 if (p.required) {
-                    ctr.addParameter(ClassName.bestGuess(p.kindName), p.name);
+                    ctr.addParameter(Util.guessTypeName(p.kindName), p.name);
                     ctr.addStatement("this.$L = $L", p.name, p.name);
                 }
             }
             typeBuilder.addMethod(ctr.build());
 
             ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
-            ctr.addParameter(ClassName.bestGuess("android.os.Parcel"), "in");
+            ctr.addParameter(Util.guessTypeName("android.os.Parcel"), "in");
             for (ParcelableClassFieldParsed p : parsed) {
                 ctr.addStatement("\tthis." + p.name + " = (" + p.kindName + ")" + p.parcelerName + ".readFromParcel(in, " + p.kindName + ".class)");
             }
@@ -221,7 +228,7 @@ public class EventListenerGenerator extends AbstractProcessor {
 
             MethodSpec.Builder writeToParcel = MethodSpec.methodBuilder("writeToParcel")
                     .addModifiers(Modifier.PUBLIC)
-                    .addParameter(ClassName.bestGuess("android.os.Parcel"), "dest")
+                    .addParameter(Util.guessTypeName("android.os.Parcel"), "dest")
                     .addParameter(TypeName.INT, "flags");
             for (ParcelableClassFieldParsed p : parsed) {
                 writeToParcel.addStatement("$L.writeToParcel(this.$L, dest, flags)", p.parcelerName, p.name);
@@ -229,13 +236,14 @@ public class EventListenerGenerator extends AbstractProcessor {
 
             typeBuilder.addMethod(writeToParcel.build());
 
+            ClassName creatorClassName = ClassName.bestGuess("android.os.Parcelable.Creator");
 
             TypeSpec creator = TypeSpec.anonymousClassBuilder("")
-                    .addSuperinterface(ParameterizedTypeName.get(ClassName.bestGuess("android.os.Parcelable.Creator"), self))
+                    .addSuperinterface(ParameterizedTypeName.get(creatorClassName, self))
                     .addMethod(MethodSpec.methodBuilder("createFromParcel")
                             .addModifiers(Modifier.PUBLIC)
                             .returns(self)
-                            .addParameter(ClassName.bestGuess("android.os.Parcel"), "in")
+                            .addParameter(Util.guessTypeName("android.os.Parcel"), "in")
                             .addStatement("return new $L(in)", eventClassName)
                             .build())
                     .addMethod(MethodSpec.methodBuilder("newArray")
@@ -246,7 +254,7 @@ public class EventListenerGenerator extends AbstractProcessor {
                             .build()
                     ).build();
 
-            typeBuilder.addField(FieldSpec.builder(ParameterizedTypeName.get(ClassName.bestGuess("android.os.Parcelable.Creator"), self),
+            typeBuilder.addField(FieldSpec.builder(ParameterizedTypeName.get(creatorClassName, self),
                     "CREATOR", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
                     .initializer("$L", creator).build());
 

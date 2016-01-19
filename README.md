@@ -57,7 +57,7 @@ For each action the service needs to perform:
 * Tag it with @EventProducer with the events it will emit.
 * Tag it with @RequestFactory so it will be registered.
 * Optional: Tag it with @RequestFactoryWithVariables so convenience factories will be created.
-* Optional: Tag it with @RequestFactoryWithClass soconveniencee methods will be added.
+* Optional: Tag it with @RequestFactoryWithClass so convenience methods will be added.
 
 For class that owns [event listeners]:
 

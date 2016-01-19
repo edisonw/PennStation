@@ -41,12 +41,12 @@ public class PennStation {
         return sManager;
     }
 
-    public static void postStickyEvent(Object object) {
-        getInstance().postStickyEvent(object);
+    public static void postLocalStickyEvent(Object object) {
+        getInstance().postLocalStickyEvent(object);
     }
 
-    public static void postEvent(Object object) {
-        getInstance().postEvent(object);
+    public static void postLocalEvent(Object object) {
+        getInstance().postLocalEvent(object);
     }
 
     public static void registerListener(Object object) {
@@ -89,9 +89,9 @@ public class PennStation {
                             if (result != null) {
                                 result.setResponseInfo(new ResponseInfo(b));
                                 if (result.postSticky()) {
-                                    postStickyEvent(result);
+                                    postLocalStickyEvent(result);
                                 } else {
-                                    postEvent(result);
+                                    postLocalEvent(result);
                                 }
                             }
                         }
@@ -101,11 +101,11 @@ public class PennStation {
                     Context.BIND_AUTO_CREATE);
         }
 
-        public void postStickyEvent(Object object) {
+        public void postLocalStickyEvent(Object object) {
             mBus.postSticky(object);
         }
 
-        public void postEvent(Object object) {
+        public void postLocalEvent(Object object) {
             mBus.post(object);
         }
 
