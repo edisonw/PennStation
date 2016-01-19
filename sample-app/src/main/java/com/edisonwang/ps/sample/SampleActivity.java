@@ -3,6 +3,7 @@ package com.edisonwang.ps.sample;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -21,32 +22,35 @@ public class SampleActivity extends Activity {
 
         @Override
         public void onEventMainThread(SimpleActionEvent event) {
-            mToast.setText("Got " + event.getClass().getSimpleName());
-            mToast.show();
+            onReceived("Got " + event.getClass().getSimpleName());
         }
 
         @Override
         public void onEventMainThread(ComplicatedAction.SampleActionFailedEvent event) {
-            mToast.setText("Got " + event.getClass().getSimpleName() + " that was " +
+            onReceived("Got " + event.getClass().getSimpleName() + " that was " +
                     event.mSampleParam + " " + event.mSampleParcelable.mTestName);
-            mToast.show();
         }
 
         @Override
         public void onEventMainThread(ComplicatedAction.SampleActionSuccessEvent event) {
-            mToast.setText("Got " + event.getClass().getSimpleName() + " that was " +
+            onReceived("Got " + event.getClass().getSimpleName() + " that was " +
                     event.mSampleParam + " " + event.mSampleParcelable.mTestName);
-            mToast.show();
         }
 
         @Override
         public void onEventMainThread(ComplicatedActionEventSample event) {
-            mToast.setText("Got " + event.getClass().getSimpleName() + " that was " +
+            onReceived("Got " + event.getClass().getSimpleName() + " that was " +
                     event.sampleParam3);
-            mToast.show();
         }
     };
+    
     private Toast mToast;
+
+    private void onReceived(String text) {
+        Log.i("PennStationTest", text);
+        mToast.setText(text);
+        mToast.show();
+    }
 
     @SuppressLint("ShowToast")
     @Override
