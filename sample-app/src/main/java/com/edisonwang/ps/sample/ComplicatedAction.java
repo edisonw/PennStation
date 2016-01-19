@@ -5,13 +5,12 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
 
+import com.edisonwang.ps.annotations.ClassField;
 import com.edisonwang.ps.annotations.EventProducer;
 import com.edisonwang.ps.annotations.ParcelableClassField;
 import com.edisonwang.ps.annotations.RequestFactory;
-import com.edisonwang.ps.annotations.ClassField;
 import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
 import com.edisonwang.ps.annotations.ResultClassWithVariables;
-import com.edisonwang.ps.lib.parcelers.ParcelableParceler;
 import com.edisonwang.ps.lib.Action;
 import com.edisonwang.ps.lib.ActionKey;
 import com.edisonwang.ps.lib.ActionKey_.Samples;
@@ -19,6 +18,7 @@ import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestBuilder;
 import com.edisonwang.ps.lib.ActionResult;
 import com.edisonwang.ps.lib.EventServiceImpl;
+import com.edisonwang.ps.lib.parcelers.ParcelableParceler;
 
 import java.util.Random;
 
@@ -120,6 +120,17 @@ public class ComplicatedAction implements Action {
 
     public static class SampleActionSuccessEvent extends SampleActionEvent {
 
+        public static final Parcelable.Creator<SampleActionSuccessEvent> CREATOR
+                = new Parcelable.Creator<SampleActionSuccessEvent>() {
+            public SampleActionSuccessEvent createFromParcel(Parcel in) {
+                return new SampleActionSuccessEvent(in);
+            }
+
+            public SampleActionSuccessEvent[] newArray(int size) {
+                return new SampleActionSuccessEvent[size];
+            }
+        };
+
         public SampleActionSuccessEvent(String s, SampleParcelable parcelable) {
             super(s, parcelable);
         }
@@ -132,20 +143,20 @@ public class ComplicatedAction implements Action {
         public int describeContents() {
             return 0;
         }
-
-        public static final Parcelable.Creator<SampleActionSuccessEvent> CREATOR
-                = new Parcelable.Creator<SampleActionSuccessEvent>() {
-            public SampleActionSuccessEvent createFromParcel(Parcel in) {
-                return new SampleActionSuccessEvent(in);
-            }
-
-            public SampleActionSuccessEvent[] newArray(int size) {
-                return new SampleActionSuccessEvent[size];
-            }
-        };
     }
 
     public static class SampleActionFailedEvent extends SampleActionEvent {
+
+        public static final Parcelable.Creator<SampleActionFailedEvent> CREATOR
+                = new Parcelable.Creator<SampleActionFailedEvent>() {
+            public SampleActionFailedEvent createFromParcel(Parcel in) {
+                return new SampleActionFailedEvent(in);
+            }
+
+            public SampleActionFailedEvent[] newArray(int size) {
+                return new SampleActionFailedEvent[size];
+            }
+        };
 
         public SampleActionFailedEvent(String s, SampleParcelable parcelable) {
             super(s, parcelable);
@@ -159,30 +170,9 @@ public class ComplicatedAction implements Action {
         public int describeContents() {
             return 0;
         }
-
-        public static final Parcelable.Creator<SampleActionFailedEvent> CREATOR
-                = new Parcelable.Creator<SampleActionFailedEvent>() {
-            public SampleActionFailedEvent createFromParcel(Parcel in) {
-                return new SampleActionFailedEvent(in);
-            }
-
-            public SampleActionFailedEvent[] newArray(int size) {
-                return new SampleActionFailedEvent[size];
-            }
-        };
     }
 
     public static class SampleParcelable implements Parcelable {
-
-        public String mTestName;
-
-        public SampleParcelable(String testName) {
-            mTestName = testName;
-        }
-
-        protected SampleParcelable(Parcel in) {
-            mTestName = in.readString();
-        }
 
         public static final Creator<SampleParcelable> CREATOR = new Creator<SampleParcelable>() {
             @Override
@@ -195,6 +185,15 @@ public class ComplicatedAction implements Action {
                 return new SampleParcelable[size];
             }
         };
+        public String mTestName;
+
+        public SampleParcelable(String testName) {
+            mTestName = testName;
+        }
+
+        protected SampleParcelable(Parcel in) {
+            mTestName = in.readString();
+        }
 
         @Override
         public int describeContents() {

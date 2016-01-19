@@ -16,5 +16,6 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface EventListener {
     boolean restrictMainThread() default true;
+
     Class[] producers();
 }

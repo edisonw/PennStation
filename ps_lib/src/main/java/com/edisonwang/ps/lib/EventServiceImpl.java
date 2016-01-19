@@ -30,14 +30,13 @@ public class EventServiceImpl<T extends Service> {
 
     public static final String TAG = "EventService";
 
-    public static final String EXTRA_SERVICE_REQUEST= "extra_service_request";
+    public static final String EXTRA_SERVICE_REQUEST = "extra_service_request";
     public static final String EXTRA_SERVICE_RESULT = "extra_service_result";
     public static final String EXTRA_CALLBACK = "extra_callback";
 
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private final T mService;
     private ExecutorService mExecutor;
-    private LinkedHashMap<Integer, Boolean> mStartIds;
     private final Messenger mMessenger = new Messenger(new Handler() {
 
         @Override
@@ -46,10 +45,7 @@ public class EventServiceImpl<T extends Service> {
             mExecutor.execute(new ExecutionRunnable(0, msg.getData(), null, msg.replyTo));
         }
     });
-
-    public interface EventServiceResponseHandler {
-        void handleServiceResponse(Bundle b);
-    }
+    private LinkedHashMap<Integer, Boolean> mStartIds;
 
     public EventServiceImpl(T service) {
         mService = service;
@@ -86,27 +82,6 @@ public class EventServiceImpl<T extends Service> {
         return mMessenger.getBinder();
     }
 
-    private class ResponderRunnable implements Runnable {
-        private final SpiralServiceResponder mResponder;
-        private final Bundle mBundle;
-        private final int mStartId;
-
-        public ResponderRunnable(SpiralServiceResponder responder, Bundle bundle, int startId) {
-            mResponder = responder;
-            mBundle = bundle;
-            mStartId = startId;
-        }
-
-        public void run() {
-            if (mResponder != null) {
-                mResponder.onServiceResponse(mBundle);
-            }
-            if (mStartId > 0) {
-                attemptStop(mStartId);
-            }
-        }
-    }
-
     void attemptStop(int startId) {
         mStartIds.put(startId, true);
 
@@ -124,81 +99,16 @@ public class EventServiceImpl<T extends Service> {
         mStartIds.clear();
     }
 
-    private class MessengerResponderRunnable implements Runnable {
-        private final Messenger mResponder;
-        private final Bundle mBundle;
-        private final int mStartId;
-
-        public MessengerResponderRunnable(Messenger responder, Bundle bundle, int startId) {
-            mResponder = responder;
-            mBundle = bundle;
-            mStartId = startId;
-        }
-
-        public void run() {
-            if (mResponder != null) {
-                Message msg = new Message();
-                Bundle b = msg.getData();
-                b.putAll(mBundle);
-                try {
-                    mResponder.send(msg);
-                } catch (Exception e) {
-                    Log.e(TAG, "Error sending service response.", e);
-                }
-            }
-            if (mStartId > 0) {
-                attemptStop(mStartId);
-            }
-        }
-    }
-
     public T getService() {
         return mService;
     }
 
-    public static abstract class SpiralServiceResponder extends Binder {
-        public abstract void onServiceResponse(Bundle bundle);
+    public interface EventServiceResponseHandler {
+        void handleServiceResponse(Bundle b);
     }
 
-    private class ExecutionRunnable implements Runnable {
-        private final int mStartId;
-        private final Bundle mBundle;
-        private final Messenger mMessenger;
-        private final SpiralServiceResponder mResponder;
-
-        // Optionally either responder or messenger will be used to send response back to ui
-        public ExecutionRunnable(int startId, Bundle bundle,
-                                 SpiralServiceResponder responder, Messenger messenger) {
-            mStartId = startId;
-            mBundle = bundle;
-            mResponder = responder;
-            mMessenger = messenger;
-        }
-
-        public void run() {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
-            ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
-            ActionResult result = null;
-            if (event != null) {
-                result = event.process(EventServiceImpl.this);
-            }
-            if (result != null) {
-                mBundle.putParcelable(EXTRA_SERVICE_RESULT, result);
-            }
-
-            final Runnable responderRunnable;
-            if (mResponder != null) {
-                responderRunnable = new ResponderRunnable(mResponder, mBundle, mStartId);
-            } else if (mMessenger != null) {
-                responderRunnable = new MessengerResponderRunnable(mMessenger, mBundle, mStartId);
-            } else {
-                responderRunnable = null;
-            }
-
-            if (responderRunnable != null) {
-                mMainHandler.post(responderRunnable);
-            }
-        }
+    public static abstract class SpiralServiceResponder extends Binder {
+        public abstract void onServiceResponse(Bundle bundle);
     }
 
     public static class EventServiceCallback implements Parcelable {
@@ -262,14 +172,12 @@ public class EventServiceImpl<T extends Service> {
 
         public static final String EXTRA_REQUEST_ID = "connection_request_id";
         public static final String EXTRA_REQUEST_TIME_MS = "connection_request_time";
-
-        private Messenger mService;
         private final HashMap<String, Bundle> mPendingQueue = new HashMap<>();
         private final HashMap<String, Bundle> mRequestQueue = new HashMap<>();
-
         private final int[] mLock = {};
         private final Context mContext;
         private final EventServiceResponseHandler mResponseHandler;
+        private Messenger mService;
         private Messenger mResponder;
 
         public EventServiceConnection(Context context, EventServiceResponseHandler handler) {
@@ -372,6 +280,96 @@ public class EventServiceImpl<T extends Service> {
         public String generateRequestId() {
             //Generate a six letter requestAction ID.
             return Long.toHexString(Double.doubleToLongBits(Math.random()));
+        }
+    }
+
+    private class ResponderRunnable implements Runnable {
+        private final SpiralServiceResponder mResponder;
+        private final Bundle mBundle;
+        private final int mStartId;
+
+        public ResponderRunnable(SpiralServiceResponder responder, Bundle bundle, int startId) {
+            mResponder = responder;
+            mBundle = bundle;
+            mStartId = startId;
+        }
+
+        public void run() {
+            if (mResponder != null) {
+                mResponder.onServiceResponse(mBundle);
+            }
+            if (mStartId > 0) {
+                attemptStop(mStartId);
+            }
+        }
+    }
+
+    private class MessengerResponderRunnable implements Runnable {
+        private final Messenger mResponder;
+        private final Bundle mBundle;
+        private final int mStartId;
+
+        public MessengerResponderRunnable(Messenger responder, Bundle bundle, int startId) {
+            mResponder = responder;
+            mBundle = bundle;
+            mStartId = startId;
+        }
+
+        public void run() {
+            if (mResponder != null) {
+                Message msg = new Message();
+                Bundle b = msg.getData();
+                b.putAll(mBundle);
+                try {
+                    mResponder.send(msg);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error sending service response.", e);
+                }
+            }
+            if (mStartId > 0) {
+                attemptStop(mStartId);
+            }
+        }
+    }
+
+    private class ExecutionRunnable implements Runnable {
+        private final int mStartId;
+        private final Bundle mBundle;
+        private final Messenger mMessenger;
+        private final SpiralServiceResponder mResponder;
+
+        // Optionally either responder or messenger will be used to send response back to ui
+        public ExecutionRunnable(int startId, Bundle bundle,
+                                 SpiralServiceResponder responder, Messenger messenger) {
+            mStartId = startId;
+            mBundle = bundle;
+            mResponder = responder;
+            mMessenger = messenger;
+        }
+
+        public void run() {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+            ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
+            ActionResult result = null;
+            if (event != null) {
+                result = event.process(EventServiceImpl.this);
+            }
+            if (result != null) {
+                mBundle.putParcelable(EXTRA_SERVICE_RESULT, result);
+            }
+
+            final Runnable responderRunnable;
+            if (mResponder != null) {
+                responderRunnable = new ResponderRunnable(mResponder, mBundle, mStartId);
+            } else if (mMessenger != null) {
+                responderRunnable = new MessengerResponderRunnable(mMessenger, mBundle, mStartId);
+            } else {
+                responderRunnable = null;
+            }
+
+            if (responderRunnable != null) {
+                mMainHandler.post(responderRunnable);
+            }
         }
     }
 }

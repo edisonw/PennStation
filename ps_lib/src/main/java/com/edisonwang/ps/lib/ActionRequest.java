@@ -9,8 +9,20 @@ import android.os.Parcelable;
  */
 public class ActionRequest implements Parcelable {
 
+    public static final Creator<ActionRequest> CREATOR = new Creator<ActionRequest>() {
+        @Override
+        public ActionRequest createFromParcel(Parcel in) {
+            return new ActionRequest(in);
+        }
+
+        @Override
+        public ActionRequest[] newArray(int size) {
+            return new ActionRequest[size];
+        }
+    };
     ActionKey mActionKey;
     Bundle mArgs;
+
 
     public ActionRequest(ActionKey actionKey, Bundle args) {
         mActionKey = actionKey;
@@ -20,10 +32,17 @@ public class ActionRequest implements Parcelable {
         }
     }
 
-
     public ActionRequest(ActionKey actionKey) {
         mActionKey = actionKey;
         mArgs = new Bundle();
+    }
+
+    protected ActionRequest(Parcel in) {
+        mActionKey = (ActionKey) in.readSerializable();
+        mArgs = in.readBundle();
+        if (mArgs == null) {
+            mArgs = new Bundle();
+        }
     }
 
     public void addArgs(Bundle bundle) {
@@ -33,14 +52,6 @@ public class ActionRequest implements Parcelable {
     public Bundle getArguments(ClassLoader loader) {
         mArgs.setClassLoader(loader);
         return mArgs;
-    }
-
-    protected ActionRequest(Parcel in) {
-        mActionKey = (ActionKey) in.readSerializable();
-        mArgs = in.readBundle();
-        if (mArgs == null) {
-            mArgs = new Bundle();
-        }
     }
 
     @Override
@@ -53,18 +64,6 @@ public class ActionRequest implements Parcelable {
         dest.writeSerializable(mActionKey);
         dest.writeBundle(mArgs != null ? mArgs : new Bundle());
     }
-
-    public static final Creator<ActionRequest> CREATOR = new Creator<ActionRequest>() {
-        @Override
-        public ActionRequest createFromParcel(Parcel in) {
-            return new ActionRequest(in);
-        }
-
-        @Override
-        public ActionRequest[] newArray(int size) {
-            return new ActionRequest[size];
-        }
-    };
 
     public ActionResult process(EventServiceImpl service) {
         return mActionKey.value().processRequest(service, this);

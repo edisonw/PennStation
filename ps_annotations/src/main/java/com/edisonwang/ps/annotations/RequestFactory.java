@@ -14,6 +14,8 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface RequestFactory {
     Class baseClass();
+
     Class valueType();
+
     String group();
 }

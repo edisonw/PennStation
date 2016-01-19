@@ -8,21 +8,17 @@ import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
-import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
-import java.io.IOException;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -126,22 +122,6 @@ public class EventListenerGenerator extends AbstractProcessor {
         }
 
         return true;
-    }
-
-    private static class ParcelableClassFieldParsed {
-
-        public final String name;
-        public final String kindName;
-        public final String parcelerName;
-        public final boolean required;
-
-        public ParcelableClassFieldParsed(String name, String kindName,
-                                          String parcelerName, boolean required) {
-            this.name = name;
-            this.kindName = kindName;
-            this.parcelerName = parcelerName;
-            this.required = required;
-        }
     }
 
     private String generateResultClass(TypeElement typed, ResultClassWithVariables resultEvent) {
@@ -296,6 +276,22 @@ public class EventListenerGenerator extends AbstractProcessor {
                 String.format(msg, args),
                 e);
         throw new IllegalStateException("Failed to process some annotation.");
+    }
+
+    private static class ParcelableClassFieldParsed {
+
+        public final String name;
+        public final String kindName;
+        public final String parcelerName;
+        public final boolean required;
+
+        public ParcelableClassFieldParsed(String name, String kindName,
+                                          String parcelerName, boolean required) {
+            this.name = name;
+            this.kindName = kindName;
+            this.parcelerName = parcelerName;
+            this.required = required;
+        }
     }
 
 }

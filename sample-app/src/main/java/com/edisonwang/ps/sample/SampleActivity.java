@@ -18,6 +18,7 @@ import com.edisonwang.ps.lib.PennStation;
 })
 public class SampleActivity extends Activity {
 
+    private Toast mToast;
     private SampleActivityEventListener mListener = new SampleActivityEventListener() {
 
         @Override
@@ -43,8 +44,6 @@ public class SampleActivity extends Activity {
                     event.sampleParam3);
         }
     };
-    
-    private Toast mToast;
 
     private void onReceived(String text) {
         Log.i("PennStationTest", text);

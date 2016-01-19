@@ -20,5 +20,6 @@ public @interface EventProducer {
      * Event classes that needs to be generated.
      */
     ResultClassWithVariables[] generated();
+
     Class[] events();
 }

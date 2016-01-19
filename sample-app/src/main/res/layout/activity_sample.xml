@@ -6,9 +6,9 @@
     tools:context="com.edisonwang.ps.sample.SampleActivity">
 
     <Button
-        android:layout_centerInParent="true"
-        android:text="Send actions"
-        android:onClick="testEventRequest"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:onClick="testEventRequest"
+        android:text="Send actions" />
 </RelativeLayout>

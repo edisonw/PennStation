@@ -14,6 +14,8 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface ResultClassWithVariables {
     String classPostFix();
+
     Class baseClass();
+
     ParcelableClassField[] fields();
 }

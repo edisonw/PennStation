@@ -5,5 +5,6 @@ package com.edisonwang.ps.annotations;
  */
 public @interface ClassField {
     String name();
+
     Class kind();
 }

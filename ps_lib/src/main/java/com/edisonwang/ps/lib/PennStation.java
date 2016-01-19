@@ -13,11 +13,11 @@ import de.greenrobot.event.EventBus;
  */
 public class PennStation {
 
+    private static EventManager sManager;
+
     private PennStation() {
 
     }
-
-    private static EventManager sManager;
 
     /**
      * You can call this inside Application.onCreate();

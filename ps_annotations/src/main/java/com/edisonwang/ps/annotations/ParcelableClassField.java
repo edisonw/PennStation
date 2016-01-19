@@ -5,7 +5,10 @@ package com.edisonwang.ps.annotations;
  */
 public @interface ParcelableClassField {
     String name();
+
     Class kind();
+
     Class parceler() default Object.class;
+
     boolean required() default true;
 }

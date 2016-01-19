@@ -10,8 +10,8 @@
 
         <!-- We will use :process or :isolatedProcess here for demonstration purposes-->
         <service
-            android:process=":sample_event_service_process"
-            android:name="com.edisonwang.ps.lib.EventService" />
+            android:name="com.edisonwang.ps.lib.EventService"
+            android:process=":sample_event_service_process" />
 
         <activity
             android:name="com.edisonwang.ps.sample.SampleActivity"

@@ -31,12 +31,12 @@ public abstract class ActionResult implements Parcelable {
         mPostSticky = postSticky;
     }
 
-    void setResponseInfo(ResponseInfo responseInfo) {
-        mResponseInfo = responseInfo;
-    }
-
     public ResponseInfo getResponseInfo() {
         return mResponseInfo;
+    }
+
+    void setResponseInfo(ResponseInfo responseInfo) {
+        mResponseInfo = responseInfo;
     }
 
     @Override

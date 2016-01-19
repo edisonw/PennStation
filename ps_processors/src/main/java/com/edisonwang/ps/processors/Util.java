@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.Writer;
 
 import javax.annotation.processing.Filer;
-import javax.lang.model.element.TypeElement;
 
 /**
  * @author edi (@wew)
