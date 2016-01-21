@@ -90,7 +90,9 @@ public class PennStationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        return processEventProducersAndListeners(roundEnv) || processRequestFactory(roundEnv);
+        boolean r = processEventProducersAndListeners(roundEnv);
+        boolean r2 = processRequestFactory(roundEnv);
+        return r && r2;
     }
 
     private boolean processRequestFactory(RoundEnvironment roundEnv) {
