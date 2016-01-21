@@ -530,7 +530,13 @@ public class PennStationProcessor extends AbstractProcessor {
         }
         AnnotationValue annotationEventValue = null;
 
-        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : am.getElementValues().entrySet()) {
+        if (am == null) {
+            return classes;
+        }
+
+        Map<? extends ExecutableElement, ? extends AnnotationValue> v = am.getElementValues();
+
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : v.entrySet()) {
             if (name.equals(entry.getKey().getSimpleName().toString())) {
                 annotationEventValue = entry.getValue();
                 break;
@@ -549,6 +555,10 @@ public class PennStationProcessor extends AbstractProcessor {
     }
 
     public static TypeName guessTypeName(String classNameString) {
+        if (classNameString.endsWith("[]")) {
+            TypeName typeName = guessTypeName(classNameString.substring(0, classNameString.length() - 2));
+            return ArrayTypeName.of(typeName);
+        }
         if (double.class.getName().equals(classNameString)) {
             return TypeName.DOUBLE;
         } else if (int.class.getName().equals(classNameString)) {
