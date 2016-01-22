@@ -68,4 +68,9 @@ public class ActionRequest implements Parcelable {
     public ActionResult process(EventServiceImpl service) {
         return mActionKey.value().processRequest(service, this);
     }
+
+    @Override
+    public String toString() {
+        return mActionKey + " with args: " + (mArgs != null ? mArgs.toString() : "No arguments supplied.");
+    }
 }
