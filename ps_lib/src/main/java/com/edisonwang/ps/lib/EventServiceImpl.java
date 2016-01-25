@@ -33,6 +33,7 @@ public class EventServiceImpl<T extends Service> {
     public static final String EXTRA_SERVICE_REQUEST = "extra_service_request";
     public static final String EXTRA_SERVICE_RESULT = "extra_service_result";
     public static final String EXTRA_CALLBACK = "extra_callback";
+    public static final String EXTRA_STACKTRACE_STRING = "extra_stack_trace_string";
 
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private final T mService;
@@ -352,7 +353,7 @@ public class EventServiceImpl<T extends Service> {
             ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
             ActionResult result = null;
             if (event != null) {
-                result = event.process(EventServiceImpl.this);
+                result = event.process(EventServiceImpl.this, mBundle);
             }
             if (result != null) {
                 mBundle.putParcelable(EXTRA_SERVICE_RESULT, result);

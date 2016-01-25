@@ -1,10 +1,10 @@
 package com.edisonwang.ps.lib;
 
 import android.app.Application;
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import de.greenrobot.event.EventBus;
 
@@ -19,6 +19,15 @@ public class PennStation {
 
     }
 
+    public static class PennStationOptions {
+        public final Class<? extends EventService> eventServiceClass;
+        public boolean logRequestStacks;
+
+        public PennStationOptions(Class<? extends EventService> eventServiceClass) {
+            this.eventServiceClass = eventServiceClass;
+        }
+    }
+
     /**
      * You can call this inside Application.onCreate();
      * <p/>
@@ -27,9 +36,9 @@ public class PennStation {
      * @return the instance that was created for this process.
      */
     public static synchronized EventManager init(Application application,
-                                                 Class<? extends EventService> eventServiceClass) {
+                                                 PennStationOptions options) {
         if (sManager == null) {
-            sManager = new EventManager(application, eventServiceClass);
+            sManager = new EventManager(application, options);
         }
         return sManager;
     }
@@ -73,9 +82,11 @@ public class PennStation {
 
         private final EventServiceImpl.EventServiceConnection mServiceConnection;
         private final EventBus mBus;
+        private final PennStationOptions mOptions;
 
-        private EventManager(Context context, Class<? extends Service> eventServiceClass) {
+        private EventManager(Context context, PennStationOptions options) {
             mBus = new EventBus();
+            mOptions = options;
             EventServiceImpl.EventServiceResponseHandler mServiceResponseHandler =
                     new EventServiceImpl.EventServiceResponseHandler() {
                         @Override
@@ -101,7 +112,7 @@ public class PennStation {
                         }
                     };
             mServiceConnection = new EventServiceImpl.EventServiceConnection(context, mServiceResponseHandler);
-            context.bindService(new Intent(context, eventServiceClass), mServiceConnection,
+            context.bindService(new Intent(context, options.eventServiceClass), mServiceConnection,
                     Context.BIND_AUTO_CREATE);
         }
 
@@ -132,6 +143,10 @@ public class PennStation {
         public String requestAction(ActionRequest request) {
             Bundle bundle = new Bundle();
             bundle.putParcelable(EventServiceImpl.EXTRA_SERVICE_REQUEST, request);
+            if (mOptions.logRequestStacks) {
+                bundle.putString(EventServiceImpl.EXTRA_STACKTRACE_STRING,
+                        Log.getStackTraceString(new Exception()));
+            }
             return mServiceConnection.queueAndExecute(bundle);
         }
     }
