@@ -90,6 +90,8 @@ public class PennStationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        System.out.println("Processing aggregations:");
+        System.out.println(annotations + " \n");
         boolean r = processEventProducersAndListeners(roundEnv);
         boolean r2 = processRequestFactory(roundEnv);
         return r && r2;
@@ -99,7 +101,6 @@ public class PennStationProcessor extends AbstractProcessor {
         Map<String, TypeSpec.Builder> builderMap = new LinkedHashMap<>();
         Map<String, HashSet<String>> groupToPackage = new HashMap<>();
         // Iterate over all @Factory annotated elements
-        System.out.print("Processing aggregations...\n");
         for (Element element : roundEnv.getElementsAnnotatedWith(RequestFactory.class)) {
             // Check if a class has been annotated with @Factory
             if (element.getKind() != ElementKind.CLASS) {
@@ -376,7 +377,7 @@ public class PennStationProcessor extends AbstractProcessor {
             for (String producer : producers) {
                 HashSet<String> events = producerEvents.get(producer);
                 if (events == null) {
-                    error(element, "Producer not registered, have you annotated it? ");
+                    error(element, "Producer " + producer + " not registered, have you annotated it? ");
                     return true;
                 }
                 listenedToEvents.addAll(events);
