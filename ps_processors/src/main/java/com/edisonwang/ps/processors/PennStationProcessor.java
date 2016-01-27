@@ -94,6 +94,9 @@ public class PennStationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        if (annotations.isEmpty()) {
+            return false;
+        }
         System.out.println("Processing aggregations:");
         System.out.println(annotations + " \n");
         boolean r = processEventProducersAndListeners(roundEnv);
@@ -406,6 +409,11 @@ public class PennStationProcessor extends AbstractProcessor {
             events = getAnnotatedClassesVariable(typed, "events", EventProducer.class);
 
             EventProducer eventProducer = typed.getAnnotation(EventProducer.class);
+
+            if (eventProducer == null) {
+                return null;
+            }
+
             for (ResultClassWithVariables resultEvent : eventProducer.generated()) {
                 events.add(generateResultClass(typed, resultEvent));
             }
