@@ -22,6 +22,7 @@ import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,6 +48,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 
 /**
@@ -70,11 +72,13 @@ public class PennStationProcessor extends AbstractProcessor {
 
     private Filer filer;
     private Messager messager;
+    private Elements elementUtils;
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
         filer = processingEnv.getFiler();
+        elementUtils = processingEnv.getElementUtils();
         messager = processingEnv.getMessager();
     }
 
@@ -359,14 +363,7 @@ public class PennStationProcessor extends AbstractProcessor {
                 error(element, "You cannot annotate " + element.getSimpleName() + " with " + EventProducer.class);
                 return true;
             }
-            TypeElement typed = (TypeElement) element;
-            HashSet<String> events = getAnnotatedClassesVariable(typed, "events", EventProducer.class);
-
-            EventProducer eventProducer = typed.getAnnotation(EventProducer.class);
-            for (ResultClassWithVariables resultEvent : eventProducer.generated()) {
-                events.add(generateResultClass(typed, resultEvent));
-            }
-            producerEvents.put(typed.getQualifiedName().toString(), events);
+            getEventsFromProducer(producerEvents, (TypeElement) element);
         }
 
         for (Element element : roundEnv.getElementsAnnotatedWith(EventListener.class)) {
@@ -377,7 +374,10 @@ public class PennStationProcessor extends AbstractProcessor {
             for (String producer : producers) {
                 HashSet<String> events = producerEvents.get(producer);
                 if (events == null) {
-                    error(element, "Producer " + producer + " not registered, have you annotated it? ");
+                    events = getEventsFromProducer(producerEvents, elementUtils.getTypeElement(producer));
+                    if (events == null) {
+                        error(element, "Producer " + producer + " not registered, have you annotated it? ");
+                    }
                     return true;
                 }
                 listenedToEvents.addAll(events);
@@ -397,6 +397,23 @@ public class PennStationProcessor extends AbstractProcessor {
         }
 
         return false;
+    }
+
+    private HashSet<String> getEventsFromProducer(HashMap<String, HashSet<String>> producerEvents, TypeElement typed) {
+        String typedName = typed.getQualifiedName().toString();
+        HashSet<String> events = producerEvents.get(typedName);
+        if (events == null) {
+            events = getAnnotatedClassesVariable(typed, "events", EventProducer.class);
+
+            EventProducer eventProducer = typed.getAnnotation(EventProducer.class);
+            for (ResultClassWithVariables resultEvent : eventProducer.generated()) {
+                events.add(generateResultClass(typed, resultEvent));
+            }
+
+            producerEvents.put(typed.getQualifiedName().toString(), events);
+        }
+
+        return events;
     }
 
     private String generateResultClass(TypeElement typed, ResultClassWithVariables resultEvent) {
