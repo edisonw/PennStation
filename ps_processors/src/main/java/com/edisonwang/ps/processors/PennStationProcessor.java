@@ -1,6 +1,7 @@
 package com.edisonwang.ps.processors;
 
 import com.edisonwang.ps.annotations.ClassField;
+import com.edisonwang.ps.annotations.Default;
 import com.edisonwang.ps.annotations.EventListener;
 import com.edisonwang.ps.annotations.EventProducer;
 import com.edisonwang.ps.annotations.ParcelableClassField;
@@ -22,7 +23,6 @@ import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -134,7 +134,7 @@ public class PennStationProcessor extends AbstractProcessor {
                 baseClassString = mte.getTypeMirror().toString();
             }
 
-            if (Object.class.getCanonicalName().equals(baseClassString)) {
+            if (Default.class.getCanonicalName().equals(baseClassString)) {
                 baseClassString = "com.edisonwang.ps.lib.ActionKey";
             }
 
@@ -158,7 +158,7 @@ public class PennStationProcessor extends AbstractProcessor {
                                 RequestFactory.class.getSimpleName(), classElement.getQualifiedName().toString()));
             }
 
-            if (Object.class.getCanonicalName().equals(valueClassString)) {
+            if (Default.class.getCanonicalName().equals(valueClassString)) {
                 valueClassString = "com.edisonwang.ps.lib.Action";
             }
 
@@ -236,7 +236,7 @@ public class PennStationProcessor extends AbstractProcessor {
             baseClassString = mte.getTypeMirror().toString();
         }
 
-        if (Object.class.getCanonicalName().equals(baseClassString)) {
+        if (Default.class.getCanonicalName().equals(baseClassString)) {
             baseClassString = "com.edisonwang.ps.lib.ActionRequestBuilder";
         }
 
@@ -432,7 +432,7 @@ public class PennStationProcessor extends AbstractProcessor {
             baseClassString = mte.getTypeMirror().toString();
         }
 
-        if (Object.class.getCanonicalName().equals(baseClassString)) {
+        if (Default.class.getCanonicalName().equals(baseClassString)) {
             baseClassString = "com.edisonwang.ps.lib.ActionResult";
         }
 
@@ -453,7 +453,7 @@ public class PennStationProcessor extends AbstractProcessor {
                 parcelerName = mte.getTypeMirror().toString();
             }
 
-            if (parcelerName.equals(Object.class.getCanonicalName())) {
+            if (parcelerName.equals(Default.class.getCanonicalName())) {
                 parcelerName = "com.edisonwang.ps.lib.parcelers.DefaultParceler";
             }
 

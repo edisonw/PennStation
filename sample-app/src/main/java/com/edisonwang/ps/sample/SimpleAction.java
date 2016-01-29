@@ -1,5 +1,7 @@
 package com.edisonwang.ps.sample;
 
+import android.os.Bundle;
+
 import com.edisonwang.ps.annotations.EventProducer;
 import com.edisonwang.ps.annotations.RequestFactory;
 import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
@@ -20,7 +22,7 @@ import com.edisonwang.ps.lib.EventServiceImpl;
 public class SimpleAction implements Action {
 
     @Override
-    public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest) {
+    public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest, Bundle bundle) {
         return new SimpleActionEvent();
     }
 }

@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 public @interface ResultClassWithVariables {
     String classPostFix() default "";
 
-    Class baseClass() default Object.class;
+    Class baseClass() default Default.class;
 
     ParcelableClassField[] fields() default {};
 }

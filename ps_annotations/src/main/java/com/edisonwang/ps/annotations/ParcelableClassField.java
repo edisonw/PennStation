@@ -12,7 +12,7 @@ public @interface ParcelableClassField {
 
     Class kind();
 
-    Class parceler() default Object.class;
+    Class parceler() default Default.class;
 
     boolean required() default true;
 }

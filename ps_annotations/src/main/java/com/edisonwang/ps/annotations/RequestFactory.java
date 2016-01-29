@@ -14,9 +14,9 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface RequestFactory {
 
-    Class baseClass() default Object.class; //Action.java
+    Class baseClass() default Default.class; //Action.java
 
-    Class valueType() default Object.class; //ActionKey.java
+    Class valueType() default Default.class; //ActionKey.java
 
     String group() default "Actions";
 }

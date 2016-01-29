@@ -57,7 +57,7 @@ public class SampleActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample);
-        PennStation.init(getApplication(), EventService.class);
+        PennStation.init(getApplication(), new PennStation.PennStationOptions(EventService.class));
         mToast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
     }
 

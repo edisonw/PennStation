@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 @Retention(value = RetentionPolicy.CLASS)
 @Inherited
 public @interface RequestFactoryWithVariables {
-    Class baseClass() default Object.class;
+    Class baseClass() default Default.class;
 
     ClassField[] variables() default {};
 }

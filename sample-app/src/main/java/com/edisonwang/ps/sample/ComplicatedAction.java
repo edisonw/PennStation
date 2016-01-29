@@ -1,6 +1,7 @@
 package com.edisonwang.ps.sample;
 
 import android.annotation.SuppressLint;
+import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
@@ -65,7 +66,7 @@ public class ComplicatedAction implements Action {
     private static final Random sRandom = new Random();
 
     @Override
-    public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest) {
+    public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest, Bundle bundle) {
         ComplicatedActionHelper helper = Samples.complicatedAction(actionRequest.getArguments(getCurrentClassLoader()));
         Log.i(TAG, "Processing requestAction " + helper.sampleParamTwo().mTestName);
         if (helper.shouldFail()) {
