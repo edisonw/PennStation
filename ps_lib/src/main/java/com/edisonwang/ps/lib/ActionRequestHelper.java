@@ -14,7 +14,7 @@ public abstract class ActionRequestHelper {
     protected Intent mVariableHolder = new Intent();
     private Bundle mValues;
 
-    public void setVariableValues(Bundle values) {
+    protected void setVariableValues(Bundle values) {
         mValues = values;
     }
 
@@ -32,7 +32,7 @@ public abstract class ActionRequestHelper {
 
     protected abstract ActionKey getActionKey();
 
-    public ActionRequest build() {
+    public ActionRequest buildRequest() {
         return new ActionRequest(getActionKey(), mVariableHolder.getExtras());
     }
 }

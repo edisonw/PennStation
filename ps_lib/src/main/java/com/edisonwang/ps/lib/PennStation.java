@@ -67,7 +67,7 @@ public class PennStation {
     }
 
     public static String requestAction(ActionRequestHelper request) {
-        return getInstance().requestAction(request.build());
+        return getInstance().requestAction(request.buildRequest());
     }
 
     public static String requestAction(ActionRequest request) {
@@ -138,6 +138,10 @@ public class PennStation {
 
         public <T> T getStickyEvent(Class<T> eventType) {
             return mBus.getStickyEvent(eventType);
+        }
+
+        public String requestAction(ActionRequestHelper helper) {
+            return requestAction(helper.buildRequest());
         }
 
         public String requestAction(ActionRequest request) {

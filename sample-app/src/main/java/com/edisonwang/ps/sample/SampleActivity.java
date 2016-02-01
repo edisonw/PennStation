@@ -77,9 +77,9 @@ public class SampleActivity extends Activity {
         PennStation.requestAction(PsSimpleAction.helper());
         PennStation.requestAction(PsSampleComplicatedAction.helper().sampleParam("sampleParamOneToFail").sampleParamTwo(
                 new ComplicatedAction.SampleParcelable("FailParcelable")).shouldFail(true)
-                .build());
+                .buildRequest());
         PennStation.requestAction(new ComplicatedActionHelper().sampleParam("sampleParamOneToSucceed").sampleParamTwo(
                 new ComplicatedAction.SampleParcelable("SuccessParcelable")).shouldFail(false)
-                .build());
+                .buildRequest());
     }
 }

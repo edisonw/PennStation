@@ -24,4 +24,8 @@ public class RequestKeeper {
     public boolean onEvent(ActionResult result) {
         return mRequestIds.remove(result.getResponseInfo().mRequestId);
     }
+
+    public void addRequest(ActionRequestHelper helper) {
+        addRequest(helper.buildRequest());
+    }
 }

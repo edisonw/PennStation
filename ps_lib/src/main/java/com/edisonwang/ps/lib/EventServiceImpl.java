@@ -140,7 +140,7 @@ public class EventServiceImpl<T extends Service> {
         /**
          * Constructs a callback from a parcel.
          *
-         * @param parcel The parcel from which to build the callback
+         * @param parcel The parcel from which to buildRequest the callback
          */
         public EventServiceCallback(Parcel parcel) {
             mResponder = (SpiralServiceResponder) parcel.readStrongBinder();
