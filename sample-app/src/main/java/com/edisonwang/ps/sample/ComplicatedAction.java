@@ -14,9 +14,9 @@ import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
 import com.edisonwang.ps.annotations.ResultClassWithVariables;
 import com.edisonwang.ps.lib.Action;
 import com.edisonwang.ps.lib.ActionKey;
-import com.edisonwang.ps.lib.ActionKey_.Samples;
+import com.edisonwang.ps.lib.ActionKey_.PsComplicatedAction;
 import com.edisonwang.ps.lib.ActionRequest;
-import com.edisonwang.ps.lib.ActionRequestBuilder;
+import com.edisonwang.ps.lib.ActionRequestHelper;
 import com.edisonwang.ps.lib.ActionResult;
 import com.edisonwang.ps.lib.EventServiceImpl;
 import com.edisonwang.ps.lib.parcelers.ParcelableParceler;
@@ -50,10 +50,9 @@ import java.util.Random;
 })
 @RequestFactory(
         baseClass = ActionKey.class,
-        valueType = Action.class,
-        group = "Samples"
+        valueType = Action.class
 )
-@RequestFactoryWithVariables(baseClass = ActionRequestBuilder.class, variables = {
+@RequestFactoryWithVariables(baseClass = ActionRequestHelper.class, variables = {
         @ClassField(name = "sampleParam", kind = String.class),
         @ClassField(name = "sampleParamTwo", kind = ComplicatedAction.SampleParcelable.class),
         @ClassField(name = "shouldFail", kind = boolean.class)
@@ -67,7 +66,7 @@ public class ComplicatedAction implements Action {
 
     @Override
     public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest, Bundle bundle) {
-        ComplicatedActionHelper helper = Samples.complicatedAction(actionRequest.getArguments(getCurrentClassLoader()));
+        ComplicatedActionHelper helper = new ComplicatedActionHelper(actionRequest.getArguments(getCurrentClassLoader()));
         Log.i(TAG, "Processing requestAction " + helper.sampleParamTwo().mTestName);
         if (helper.shouldFail()) {
             return new SampleActionFailedEvent(helper.sampleParam(), helper.sampleParamTwo());

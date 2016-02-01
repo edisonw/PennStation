@@ -17,6 +17,4 @@ public @interface RequestFactory {
     Class baseClass() default Default.class; //Action.java
 
     Class valueType() default Default.class; //ActionKey.java
-
-    String group() default "Actions";
 }

@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -105,8 +104,6 @@ public class PennStationProcessor extends AbstractProcessor {
     }
 
     private boolean processRequestFactory(RoundEnvironment roundEnv) {
-        Map<String, TypeSpec.Builder> builderMap = new LinkedHashMap<>();
-        Map<String, HashSet<String>> groupToPackage = new HashMap<>();
         // Iterate over all @Factory annotated elements
         for (Element element : roundEnv.getElementsAnnotatedWith(RequestFactory.class)) {
             // Check if a class has been annotated with @Factory
@@ -118,14 +115,6 @@ public class PennStationProcessor extends AbstractProcessor {
             RequestFactory annotationElement = classElement.getAnnotation(RequestFactory.class);
 
             //Groups of Objects, named.
-
-            String group = annotationElement.group();
-            if (group == null || group.length() == 0) {
-                throw new IllegalArgumentException(
-                        String.format("group() in @%s for class %s is null or empty! that's not allowed",
-                                RequestFactory.class.getSimpleName(), classElement.getQualifiedName().toString()));
-            }
-
             String baseClassString;
 
             try {
@@ -169,34 +158,23 @@ public class PennStationProcessor extends AbstractProcessor {
                 continue;
             }
 
-            String groupId = baseClassString + "_." + group;
-
-            HashSet<String> packageGroups = groupToPackage.get(baseClassString);
-
-            if (packageGroups == null) {
-                packageGroups = new HashSet<>();
-                groupToPackage.put(baseClassString, packageGroups);
-            }
-
-            packageGroups.add(groupId);
-
             String enumName = classElement.getSimpleName().toString();
 
-            TypeSpec.Builder groupSpec = builderMap.get(groupId);
-            if (groupSpec == null) {
-                groupSpec = TypeSpec.enumBuilder(group);
-                groupSpec.addModifiers(Modifier.PUBLIC);
-                groupSpec.addSuperinterface(baseClassType);
-                groupSpec.addField(valueClassType,
-                        "value", Modifier.PRIVATE, Modifier.FINAL)
-                        .addMethod(MethodSpec.constructorBuilder()
-                                .addParameter(valueClassType, "value")
-                                .addStatement("this.$N = $N", "value", "value")
-                                .build());
-                groupSpec.addMethod(MethodSpec.methodBuilder("value").addModifiers(Modifier.PUBLIC)
-                        .returns(valueClassType).addStatement("return this.value").build());
-                builderMap.put(groupId, groupSpec);
-            }
+            String enumClass = "Ps" + enumName;
+
+            String packageName = baseClassString + "_.";
+
+            TypeSpec.Builder groupSpec = TypeSpec.enumBuilder(enumClass);
+            groupSpec.addModifiers(Modifier.PUBLIC);
+            groupSpec.addSuperinterface(baseClassType);
+            groupSpec.addField(valueClassType,
+                    "value", Modifier.PRIVATE, Modifier.FINAL)
+                    .addMethod(MethodSpec.constructorBuilder()
+                            .addParameter(valueClassType, "value")
+                            .addStatement("this.$N = $N", "value", "value")
+                            .build());
+            groupSpec.addMethod(MethodSpec.methodBuilder("value").addModifiers(Modifier.PUBLIC)
+                    .returns(valueClassType).addStatement("return this.value").build());
 
             groupSpec.addEnumConstant(enumName,
                     TypeSpec.anonymousClassBuilder("new $L()", classElement) //Empty Constructor required.
@@ -210,23 +188,18 @@ public class PennStationProcessor extends AbstractProcessor {
             RequestFactoryWithVariables variables = classElement.getAnnotation(RequestFactoryWithVariables.class);
 
             if (variables != null) {
-                addFactoryAndFactoryMethod(variables, classElement, enumName, groupSpec, groupId);
+                addFactoryAndFactoryMethod(variables, classElement, enumName, groupSpec, packageName + enumClass, baseClassString);
             }
 
-        }
+            writeClass(packageName + enumClass, groupSpec.build(), filer);
 
-        for (String baseClass : groupToPackage.keySet()) {
-            HashSet<String> groups = groupToPackage.get(baseClass);
-            for (String groupId : groups) {
-                writeClass(groupId, builderMap.get(groupId).build(), filer);
-            }
         }
 
         return true;
     }
 
     private void addFactoryAndFactoryMethod(RequestFactoryWithVariables anno, TypeElement classElement,
-                                            String enumName, TypeSpec.Builder groupSpec, String groupId) {
+                                            String enumName, TypeSpec.Builder groupSpec, String groupId, String keyReturnClass) {
 
         String baseClassString;
 
@@ -237,7 +210,7 @@ public class PennStationProcessor extends AbstractProcessor {
         }
 
         if (Default.class.getCanonicalName().equals(baseClassString)) {
-            baseClassString = "com.edisonwang.ps.lib.ActionRequestBuilder";
+            baseClassString = "com.edisonwang.ps.lib.ActionRequestHelper";
         }
 
         if (baseClassString == null) {
@@ -256,14 +229,17 @@ public class PennStationProcessor extends AbstractProcessor {
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PUBLIC)
                 .superclass(ClassName.bestGuess(baseClassString));
+        // protected abstract ActionKey getActionKey();
+        typeBuilder.addMethod(MethodSpec.methodBuilder("getActionKey").returns(
+            ClassName.bestGuess(keyReturnClass)
+        ).addModifiers(Modifier.PUBLIC)
+                .addStatement(
+                "return $L.$L", groupId, enumName
+        ).build());
 
         MethodSpec.Builder ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
 
-        ctr.addStatement("mTarget = $L.$L", groupId, enumName).build();
-
-        char c[] = enumName.toCharArray();
-        c[0] = Character.toLowerCase(c[0]);
-        String methodName = new String(c);
+        String methodName = "helper";
 
         if (variables.length != 0) {
             ParameterSpec valuesParam = ParameterSpec.builder(
@@ -271,7 +247,6 @@ public class PennStationProcessor extends AbstractProcessor {
             typeBuilder.addMethod(
                     MethodSpec.constructorBuilder().
                             addModifiers(Modifier.PUBLIC).addParameter(valuesParam)
-                            .addStatement("mTarget = $L.$L", groupId, enumName)
                             .addStatement("setVariableValues(values)")
                             .build());
             groupSpec.addMethod(MethodSpec.methodBuilder(methodName)

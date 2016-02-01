@@ -3,12 +3,14 @@ package com.edisonwang.ps.lib;
 import android.content.Intent;
 import android.os.Bundle;
 
+import java.io.Serializable;
+
 /**
+ *
  * @author edi
  */
-public class ActionRequestBuilder {
+public abstract class ActionRequestHelper {
 
-    protected ActionKey mTarget;
     protected Intent mVariableHolder = new Intent();
     private Bundle mValues;
 
@@ -28,7 +30,9 @@ public class ActionRequestBuilder {
         return null;
     }
 
+    protected abstract ActionKey getActionKey();
+
     public ActionRequest build() {
-        return new ActionRequest(mTarget, mVariableHolder.getExtras());
+        return new ActionRequest(getActionKey(), mVariableHolder.getExtras());
     }
 }

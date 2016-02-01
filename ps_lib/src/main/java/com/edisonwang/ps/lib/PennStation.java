@@ -66,7 +66,7 @@ public class PennStation {
         getInstance().unRegisterListener(object);
     }
 
-    public static String requestAction(ActionRequestBuilder request) {
+    public static String requestAction(ActionRequestHelper request) {
         return getInstance().requestAction(request.build());
     }
 
