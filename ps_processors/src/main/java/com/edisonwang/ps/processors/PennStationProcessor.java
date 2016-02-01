@@ -160,9 +160,9 @@ public class PennStationProcessor extends AbstractProcessor {
 
             String enumName = classElement.getSimpleName().toString();
 
-            String enumClass = "Ps" + enumName;
+            String enumClass = "Ps" + annotationElement.group() + enumName;
 
-            String packageName = baseClassString + "_.";
+            String packageName = classElement.getQualifiedName()+ "_.";
 
             TypeSpec.Builder groupSpec = TypeSpec.enumBuilder(enumClass);
             groupSpec.addModifiers(Modifier.PUBLIC);

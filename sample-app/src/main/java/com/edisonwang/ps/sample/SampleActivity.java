@@ -8,10 +8,10 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.edisonwang.ps.annotations.EventListener;
-import com.edisonwang.ps.lib.ActionKey_.PsComplicatedAction;
-import com.edisonwang.ps.lib.ActionKey_.PsSimpleAction;
 import com.edisonwang.ps.lib.EventService;
 import com.edisonwang.ps.lib.PennStation;
+import com.edisonwang.ps.sample.ComplicatedAction_.PsSampleComplicatedAction;
+import com.edisonwang.ps.sample.SimpleAction_.PsSimpleAction;
 
 @EventListener(producers = {
         ComplicatedAction.class,
@@ -75,7 +75,7 @@ public class SampleActivity extends Activity {
 
     public void testEventRequest(View button) {
         PennStation.requestAction(PsSimpleAction.helper());
-        PennStation.requestAction(PsComplicatedAction.helper().sampleParam("sampleParamOneToFail").sampleParamTwo(
+        PennStation.requestAction(PsSampleComplicatedAction.helper().sampleParam("sampleParamOneToFail").sampleParamTwo(
                 new ComplicatedAction.SampleParcelable("FailParcelable")).shouldFail(true)
                 .build());
         PennStation.requestAction(new ComplicatedActionHelper().sampleParam("sampleParamOneToSucceed").sampleParamTwo(

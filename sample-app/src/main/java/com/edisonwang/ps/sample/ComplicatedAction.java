@@ -14,7 +14,6 @@ import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
 import com.edisonwang.ps.annotations.ResultClassWithVariables;
 import com.edisonwang.ps.lib.Action;
 import com.edisonwang.ps.lib.ActionKey;
-import com.edisonwang.ps.lib.ActionKey_.PsComplicatedAction;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestHelper;
 import com.edisonwang.ps.lib.ActionResult;
@@ -50,7 +49,8 @@ import java.util.Random;
 })
 @RequestFactory(
         baseClass = ActionKey.class,
-        valueType = Action.class
+        valueType = Action.class,
+        group = "Sample"
 )
 @RequestFactoryWithVariables(baseClass = ActionRequestHelper.class, variables = {
         @ClassField(name = "sampleParam", kind = String.class),
