@@ -1,4 +1,50 @@
+group = 'com.edisonwang.ps'
+version = '1.0.1'
+
 apply plugin: 'java'
+
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
+
+def siteUrl = 'https://github.com/edisonw/PennStation'
+def gitUrl = 'https://github.com/edisonw/PennStation.git'
+
+bintray {
+    user = 'edisonw'
+    key = project.BINTRAY_KEY
+
+    configurations = ['archives'] //When uploading configuration files
+    pkg {
+        repo = 'android'
+        name = 'PennStation'
+        desc = 'Penn Station, EventBus on steroids.'
+        websiteUrl = siteUrl
+        issueTrackerUrl = 'https://github.com/edisonw/PennStation/issues'
+        vcsUrl = gitUrl
+        licenses = ['Apache-2.0']
+        labels = ['aar', 'android', 'example']
+        publicDownloadNumbers = true
+    }
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+task findConventions << {
+    println project.getConvention()
+}
 
 dependencies {
     compile project(path: ':ps_annotations')

@@ -1,14 +1,17 @@
+group = 'com.edisonwang.ps'
+version = '1.0.1'
+
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.2"
+    compileSdkVersion Integer.parseInt(project.ANDROID_BUILD_SDK_VERSION)
+    buildToolsVersion project.ANDROID_BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdkVersion 15
-        targetSdkVersion 23
-        versionCode 1
-        versionName "1.0"
+        minSdkVersion Integer.parseInt(project.ANDROID_BUILD_MIN_SDK_VERSION)
+        targetSdkVersion Integer.parseInt(project.ANDROID_BUILD_TARGET_SDK_VERSION)
+        versionCode 2
+        versionName "1.0.2"
     }
     buildTypes {
         release {
@@ -19,6 +22,84 @@ android {
 }
 
 dependencies {
-    compile project(':ps_annotations')
+    debugCompile project(':ps_annotations')
+    releaseCompile 'com.edisonwang.ps:ps_annotations:1.0.1'
     compile 'de.greenrobot:eventbus:2.4.0'
+}
+
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+def siteUrl = 'https://github.com/edisonw/PennStation'
+def gitUrl = 'https://github.com/edisonw/PennStation.git'
+
+bintray {
+    user = 'edisonw'
+    key = project.BINTRAY_KEY
+
+    configurations = ['archives'] //When uploading configuration files
+    pkg {
+        repo = 'android'
+        name = 'PennStation'
+        desc = 'Penn Station, EventBus on steroids.'
+        websiteUrl = siteUrl
+        issueTrackerUrl = 'https://github.com/edisonw/PennStation/issues'
+        vcsUrl = gitUrl
+        licenses = ['Apache-2.0']
+        labels = ['aar', 'android', 'example']
+        publicDownloadNumbers = true
+    }
+}
+install {
+    repositories.mavenInstaller {
+        pom {
+            project {
+                packaging 'aar'
+                name 'PennStation'
+                url siteUrl
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'edisonw'
+                        name 'Edison Wang'
+                        email 'edisonRemoveThis@molabs.com'
+                    }
+                }
+                scm {
+                    connection 'https://github.com/edisonw/PennStation'
+                    developerConnection 'https://github.com/edisonw/PennStation.git'
+                    url siteUrl
+
+                }
+            }
+        }
+    }
+}
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+task findConventions << {
+    println project.getConvention()
 }
