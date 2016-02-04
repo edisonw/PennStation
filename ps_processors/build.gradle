@@ -22,7 +22,7 @@ bintray {
         issueTrackerUrl = 'https://github.com/edisonw/PennStation/issues'
         vcsUrl = gitUrl
         licenses = ['Apache-2.0']
-        labels = ['aar', 'android', 'example']
+        labels = ['aar', 'android', 'eventbus', 'annotation']
         publicDownloadNumbers = true
     }
 }

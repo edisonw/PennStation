@@ -25,6 +25,9 @@ I'll add them to jcenter soon..but for now:
 buildscript {
     repositories {
         jcenter()
+        maven {
+            url 'http://dl.bintray.com/edisonw/android'
+        }
     }
     dependencies {
         classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
@@ -35,8 +38,8 @@ apt {
     processor "com.edisonwang.ps.processors.PennStationProcessor"
 }
 dependencies {
-    apt project(':ps_processors')
-    compile project(':ps_lib')
+    apt 'com.edisonwang.ps:ps_processors:1.0.1'
+    compile 'com.edisonwang.ps:ps_lib:1.0.1'
 }
 ```
 

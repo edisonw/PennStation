@@ -35,6 +35,11 @@ apt {
 }
 
 dependencies {
+    /*
+    Replace with the following in your own project.
+    apt 'com.edisonwang.ps:ps_processors:1.0.1'
+    compile 'com.edisonwang.ps:ps_lib:1.0.1'
+    */
     apt project(':ps_processors')
     compile project(':ps_lib')
 }
