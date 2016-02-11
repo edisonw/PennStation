@@ -72,6 +72,6 @@ For class that owns [event listeners]:
 [EventBus]: https://github.com/google/guava/wiki/EventBusExplained
 [Otto by Square]: http://square.github.io/otto/
 [EventBus by greenrobot]: https://github.com/greenrobot/
-[implementation code for the action]: https://github.com/edisonw/Ipes/blob/master/sample-app/src/main/java/com/edisonwang/android/ipes/SampleAction.java
-[event listeners]: https://github.com/edisonw/Ipes/blob/master/sample-app/src/main/java/com/edisonwang/android/ipes/SampleActivity.java
-[Full SampleAction]: https://github.com/edisonw/Ipes/blob/master/sample-app/src/main/java/com/edisonwang/android/ipes/SampleAction.java
+[implementation code for the action]: https://github.com/edisonw/PennStation/blob/master/sample-app/src/main/java/com/edisonwang/ps/sample/SimpleAction.java
+[event listeners]: https://github.com/edisonw/PennStation/blob/master/sample-app/src/main/java/com/edisonwang/ps/sample/SampleActivity.java
+[Full SampleAction]: https://github.com/edisonw/PennStation/blob/master/sample-app/src/main/java/com/edisonwang/ps/sample/ComplicatedAction.java
