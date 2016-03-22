@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.edisonwang.ps.annotations.EventListener;
@@ -19,7 +20,6 @@ import com.edisonwang.ps.sample.SimpleAction_.PsSimpleAction;
 })
 public class SampleActivity extends Activity {
 
-    private Toast mToast;
     private SampleActivityEventListener mListener = new SampleActivityEventListener() {
 
         @Override
@@ -46,10 +46,11 @@ public class SampleActivity extends Activity {
         }
     };
 
+    private EditText mUpdates;
+
     private void onReceived(String text) {
         Log.i("PennStationTest", text);
-        mToast.setText(text);
-        mToast.show();
+        mUpdates.setText(text + " \n\n" + mUpdates.getText());
     }
 
     @SuppressLint("ShowToast")
@@ -58,7 +59,8 @@ public class SampleActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample);
         PennStation.init(getApplication(), new PennStation.PennStationOptions(EventService.class));
-        mToast = Toast.makeText(this, "", Toast.LENGTH_SHORT);
+        mUpdates = (EditText) findViewById(R.id.updates);
+        mUpdates.setKeyListener(null);
     }
 
     @Override
@@ -74,10 +76,14 @@ public class SampleActivity extends Activity {
     }
 
     public void testEventRequest(View button) {
+        mUpdates.setText("");
+        //This will result in a success in simple action event.
         PennStation.requestAction(PsSimpleAction.helper());
+        //This will result in a failed complicated action event.
         PennStation.requestAction(PsSampleComplicatedAction.helper().sampleParam("sampleParamOneToFail").sampleParamTwo(
                 new ComplicatedAction.SampleParcelable("FailParcelable")).shouldFail(true)
                 .buildRequest());
+        //This will randomly be either one of the two success events that the action emits.
         PennStation.requestAction(new ComplicatedActionHelper().sampleParam("sampleParamOneToSucceed").sampleParamTwo(
                 new ComplicatedAction.SampleParcelable("SuccessParcelable")).shouldFail(false)
                 .buildRequest());

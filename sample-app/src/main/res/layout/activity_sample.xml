@@ -8,7 +8,20 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
         android:onClick="testEventRequest"
-        android:text="Send actions" />
+        android:text="Send actions"
+        android:layout_centerHorizontal="true"
+        android:id="@+id/button" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textMultiLine"
+        android:padding="10dp"
+        android:ems="10"
+        android:gravity="top"
+        android:id="@+id/updates"
+        android:layout_below="@+id/button"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true" />
 </RelativeLayout>
