@@ -39,7 +39,7 @@ public class ActionRequest implements Parcelable {
 
     protected ActionRequest(Parcel in) {
         mActionKey = (ActionKey) in.readSerializable();
-        mArgs = in.readBundle();
+        mArgs = in.readBundle(getClass().getClassLoader());
         if (mArgs == null) {
             mArgs = new Bundle();
         }

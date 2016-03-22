@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import com.edisonwang.ps.annotations.EventListener;
 import com.edisonwang.ps.lib.EventService;
@@ -48,6 +47,7 @@ public class SampleActivity extends Activity {
 
     private EditText mUpdates;
 
+    @SuppressLint("SetTextI18n")
     private void onReceived(String text) {
         Log.i("PennStationTest", text);
         mUpdates.setText(text + " \n\n" + mUpdates.getText());
