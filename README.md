@@ -17,8 +17,11 @@ PennStation is an inter-process event service library that supports the followin
 
 And during this entire process....write only the [implementation code for the action] and the [event listeners].
  
-# Usage
+# Usages
 
+[Sample Usage]
+ 
+# Setup
 
 * Add the APT plugin to the file where you declare com.android.tools.build:gradle version. 
 ```gradle
@@ -70,6 +73,7 @@ For class that owns [event listeners]:
 * Write the listeners that listens to those events and XXXEventListener will be generated.
 * Implement the listeners and (un)register it via Events.registerListener().
 
+[SampleUsage]: https://github.com/edisonw/PennStation/wiki/Sample-Usage
 [PennStation]: https://github.com/edisonw/Ipes
 [EventBus]: https://github.com/google/guava/wiki/EventBusExplained
 [Otto by Square]: http://square.github.io/otto/
