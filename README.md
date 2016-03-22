@@ -73,7 +73,7 @@ For class that owns [event listeners]:
 * Write the listeners that listens to those events and XXXEventListener will be generated.
 * Implement the listeners and (un)register it via Events.registerListener().
 
-[SampleUsage]: https://github.com/edisonw/PennStation/wiki/Sample-Usage
+[Sample Usage]: https://github.com/edisonw/PennStation/wiki/Sample-Usage
 [PennStation]: https://github.com/edisonw/Ipes
 [EventBus]: https://github.com/google/guava/wiki/EventBusExplained
 [Otto by Square]: http://square.github.io/otto/
