@@ -1,5 +1,5 @@
 group = 'com.edisonwang.ps'
-version = '1.0.1'
+version = project.LIBRARY_VERSION
 
 apply plugin: 'com.android.library'
 
@@ -11,7 +11,7 @@ android {
         minSdkVersion Integer.parseInt(project.ANDROID_BUILD_MIN_SDK_VERSION)
         targetSdkVersion Integer.parseInt(project.ANDROID_BUILD_TARGET_SDK_VERSION)
         versionCode 2
-        versionName "1.0.2"
+        versionName project.LIBRARY_VERSION
     }
     buildTypes {
         release {
@@ -22,8 +22,8 @@ android {
 }
 
 dependencies {
-    debugCompile project(':ps_annotations')
-    releaseCompile 'com.edisonwang.ps:ps_annotations:1.0.1'
+    //compile 'com.edisonwang.ps:ps_annotations:1.0.1' //Test against an older version.
+    compile project(':ps_annotations')
     compile 'de.greenrobot:eventbus:2.4.0'
 }
 

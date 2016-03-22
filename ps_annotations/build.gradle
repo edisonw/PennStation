@@ -1,5 +1,5 @@
 group = 'com.edisonwang.ps'
-version = '1.0.1'
+version = project.LIBRARY_VERSION
 
 apply plugin: 'java'
 

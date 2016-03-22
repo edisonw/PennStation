@@ -1,8 +1,9 @@
 group = 'com.edisonwang.ps'
-version = '1.0.1'
+version = project.LIBRARY_VERSION
 
 apply plugin: 'java'
 
+apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
 
@@ -24,6 +25,37 @@ bintray {
         licenses = ['Apache-2.0']
         labels = ['aar', 'android', 'eventbus', 'annotation']
         publicDownloadNumbers = true
+    }
+}
+
+install {
+    repositories.mavenInstaller {
+        pom {
+            project {
+                packaging 'jar'
+                name 'PennStationProcessor'
+                url siteUrl
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'edisonw'
+                        name 'Edison Wang'
+                        email 'edisonRemoveThis@molabs.com'
+                    }
+                }
+                scm {
+                    connection 'https://github.com/edisonw/PennStation'
+                    developerConnection 'https://github.com/edisonw/PennStation.git'
+                    url siteUrl
+
+                }
+            }
+        }
     }
 }
 
