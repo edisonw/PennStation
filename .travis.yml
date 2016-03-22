@@ -1,6 +1,10 @@
 sudo: false # Use Travis docker infrastructure
 language: android
 
+cache:
+  directories:
+  - $HOME/.m2
+
 android:
   components:
     - tools
