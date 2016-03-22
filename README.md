@@ -16,6 +16,8 @@ PennStation is an inter-process event service library that supports the followin
  * Bundle parceling is enforced cross process boundaries.
 
 And during this entire process....write only the [implementation code for the action] and the [event listeners].
+
+It turns out, it does a great job scaling apps as it uses a Fully Decopuled MVC model so it's great when all the components are agnostic of what the other two components are but only cared about the tasks given to them. 
  
 # Usages
 
