@@ -1,4 +1,4 @@
-# PennStation   [ ![Download](https://api.bintray.com/packages/edisonw/android/PennStation/images/download.svg) ](https://bintray.com/edisonw/android/PennStation/_latestVersion)
+# PennStation   [ ![Download](https://api.bintray.com/packages/edisonw/android/PennStation/images/download.svg) ](https://bintray.com/edisonw/android/PennStation/_latestVersion) ![Build Status](https://travis-ci.org/edisonw/PennStation.svg?branch=master)
 
 [PennStation] is an event service that I use as a template to build apps that require IPC.
 
