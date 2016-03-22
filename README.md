@@ -19,9 +19,9 @@ And during this entire process....write only the [implementation code for the ac
  
 # Usage
 
-```gradle
 
-//1. Add the APT plugin to your buildscript. 
+* Add the APT plugin to the file where you declare com.android.tools.build:gradle version. 
+```gradle
 buildscript {
     repositories {
         jcenter()
@@ -30,9 +30,12 @@ buildscript {
         classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
     }
 }
+```
+
+* Add the following to your build.gradle for the app module. 
+```gradle
 apply plugin: 'com.neenbedankt.android-apt'
 
-//2. Add the following to your build.gradle for the app module. 
 repositories {
     jcenter()
 }
@@ -43,13 +46,11 @@ dependencies {
     apt 'com.edisonwang.ps:ps_processors:1.0.3'
     compile 'com.edisonwang.ps:ps_lib:1.0.3'
 }
-
 ```
 
 * Add the following to your AndroidManifest.xml (or extend a new service class), you can also add a :process tag to make it run on a separate process.
 ```xml
-        <service
-            android:name="com.edisonwang.ps.lib.EventService" />
+        <service android:name="com.edisonwang.ps.lib.EventService" />
 ```
 * In your custom Application class or Activity.onCreate(), add 
 ```java
