@@ -19,9 +19,9 @@ And during this entire process....write only the [implementation code for the ac
  
 # Usage
 
-* Download and merge the following to your gradle file: 
-
 ```gradle
+
+//1. Add the APT plugin to your buildscript. 
 buildscript {
     repositories {
         jcenter()
@@ -31,6 +31,11 @@ buildscript {
     }
 }
 apply plugin: 'com.neenbedankt.android-apt'
+
+//2. Add the following to your build.gradle for the app module. 
+repositories {
+    jcenter()
+}
 apt {
     processor "com.edisonwang.ps.processors.PennStationProcessor"
 }
@@ -38,6 +43,7 @@ dependencies {
     apt 'com.edisonwang.ps:ps_processors:1.0.3'
     compile 'com.edisonwang.ps:ps_lib:1.0.3'
 }
+
 ```
 
 * Add the following to your AndroidManifest.xml (or extend a new service class), you can also add a :process tag to make it run on a separate process.
