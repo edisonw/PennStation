@@ -83,4 +83,5 @@ dependencies {
     compile 'com.google.auto.service:auto-service:1.0-rc2'
     compile 'com.squareup:javapoet:1.0.0'
     compile 'javax.annotation:jsr250-api:1.0'
+    testCompile 'junit:junit:4.12'
 }
