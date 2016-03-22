@@ -4,9 +4,9 @@
 
 # Why?
 
-[EventBus] is a great communication pattern on apps and have great library adoptions such as [EventBus by greenrobot] and [Otto by Square] on Android. 
+[EventBus] is a great communication pattern on apps and have great library adoptions such as [EventBus by greenrobot] and [Otto by Square] on Android.
 
-However, as applications scale, you write too many boilerplate code, code gets refactored but not cleaned up, and in the rare case do we want inter-process communication, Event Bus pattern falls short.
+However, as applications scale, you write too many boilerplate code, code gets refactored but not cleaned up, and in the rare case do we want inter-process communication, Event Bus pattern falls short because you will be writing boilerplate code for most of your days.
 
 PennStation is an inter-process event service library that supports the following usage pattern:
 
@@ -19,17 +19,12 @@ And during this entire process....write only the [implementation code for the ac
  
 # Usage
 
-I'll add them to jcenter soon..but for now: 
-
 * Download and merge the following to your gradle file: 
 
 ```gradle
 buildscript {
     repositories {
         jcenter()
-        maven {
-            url 'http://dl.bintray.com/edisonw/android'
-        }
     }
     dependencies {
         classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
