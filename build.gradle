@@ -1,10 +1,10 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 project.ext.ANDROID_BUILD_SDK_VERSION = "23"
 project.ext.ANDROID_BUILD_TOOLS_VERSION = "23.0.2"
-project.ext.ANDROID_BUILD_MIN_SDK_VERSION = "15"
+project.ext.ANDROID_BUILD_MIN_SDK_VERSION = "9"
 project.ext.ANDROID_BUILD_TARGET_SDK_VERSION = "23"
 project.ext.BINTRAY_KEY = System.getenv('BINTRAY_KEY')
-project.ext.LIBRARY_VERSION = "1.0.3"
+project.ext.LIBRARY_VERSION = "1.1.0"
 
 buildscript {
     repositories {
