@@ -10,7 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 public @interface ClassField {
     String name();
 
-    Class kind();
+    Kind kind();
 
     boolean required() default false;
 }

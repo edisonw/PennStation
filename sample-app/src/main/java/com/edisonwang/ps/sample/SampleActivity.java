@@ -13,6 +13,8 @@ import com.edisonwang.ps.lib.PennStation;
 import com.edisonwang.ps.sample.ComplicatedAction_.PsSampleComplicatedAction;
 import com.edisonwang.ps.sample.SimpleAction_.PsSimpleAction;
 
+import java.util.Arrays;
+
 @EventListener(producers = {
         ComplicatedAction.class,
         SimpleAction.class
@@ -41,7 +43,8 @@ public class SampleActivity extends Activity {
         @Override
         public void onEventMainThread(ComplicatedActionEventSample event) {
             onReceived("Got " + event.getClass().getSimpleName() + " that was " +
-                    event.sampleParam3);
+                    event.sampleParam3 + "\n" +
+                    "Lucky Numbers were: " + Arrays.toString(event.sampleStringList.toArray()));
         }
     };
 
