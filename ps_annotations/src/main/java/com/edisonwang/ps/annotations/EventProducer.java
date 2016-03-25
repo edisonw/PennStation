@@ -19,7 +19,7 @@ public @interface EventProducer {
     /**
      * Event classes that needs to be generated.
      */
-    ResultClassWithVariables[] generated() default {};
+    EventClass[] generated() default {};
 
     Class[] events() default {};
 }

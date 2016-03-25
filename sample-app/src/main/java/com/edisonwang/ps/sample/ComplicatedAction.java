@@ -10,9 +10,9 @@ import com.edisonwang.ps.annotations.ClassField;
 import com.edisonwang.ps.annotations.EventProducer;
 import com.edisonwang.ps.annotations.Kind;
 import com.edisonwang.ps.annotations.ParcelableClassField;
-import com.edisonwang.ps.annotations.RequestFactory;
-import com.edisonwang.ps.annotations.RequestFactoryHelper;
-import com.edisonwang.ps.annotations.ResultClassWithVariables;
+import com.edisonwang.ps.annotations.RequestAction;
+import com.edisonwang.ps.annotations.RequestActionHelper;
+import com.edisonwang.ps.annotations.EventClass;
 import com.edisonwang.ps.lib.Action;
 import com.edisonwang.ps.lib.ActionKey;
 import com.edisonwang.ps.lib.ActionRequest;
@@ -32,7 +32,7 @@ import java.util.Random;
         ComplicatedAction.SampleActionSuccessEvent.class,
         ComplicatedAction.SampleActionFailedEvent.class
 }, generated = {
-        @ResultClassWithVariables(classPostFix = "Sample", baseClass = ActionResult.class,
+        @EventClass(classPostFix = "Sample", baseClass = ActionResult.class,
                 fields = {
                         @ParcelableClassField(
                                 name = "sampleParam3",
@@ -55,12 +55,12 @@ import java.util.Random;
                         ),
                 }),
 })
-@RequestFactory(
+@RequestAction(
         baseClass = ActionKey.class,
         valueType = Action.class,
         group = "Sample"
 )
-@RequestFactoryHelper(baseClass = ActionRequestHelper.class, variables = {
+@RequestActionHelper(baseClass = ActionRequestHelper.class, variables = {
         @ClassField(name = "sampleParam", kind = @Kind(clazz = String.class)),
         @ClassField(name = "sampleParamTwo", kind =  @Kind(clazz = ComplicatedAction.SampleParcelable.class)),
         @ClassField(name = "shouldFail", kind =  @Kind(clazz = boolean.class))

@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.CLASS)
 @Inherited
-public @interface ResultClassWithVariables {
+public @interface EventClass {
     String classPostFix() default "";
 
     Class baseClass() default Default.class;

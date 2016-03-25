@@ -3,9 +3,9 @@ package com.edisonwang.ps.sample;
 import android.os.Bundle;
 
 import com.edisonwang.ps.annotations.EventProducer;
-import com.edisonwang.ps.annotations.RequestFactory;
-import com.edisonwang.ps.annotations.RequestFactoryHelper;
-import com.edisonwang.ps.annotations.ResultClassWithVariables;
+import com.edisonwang.ps.annotations.RequestAction;
+import com.edisonwang.ps.annotations.RequestActionHelper;
+import com.edisonwang.ps.annotations.EventClass;
 import com.edisonwang.ps.lib.Action;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionResult;
@@ -15,10 +15,10 @@ import com.edisonwang.ps.lib.EventServiceImpl;
  * @author edi
  */
 @EventProducer(generated = {
-        @ResultClassWithVariables
+        @EventClass
 })
-@RequestFactory
-@RequestFactoryHelper
+@RequestAction
+@RequestActionHelper
 public class SimpleAction implements Action {
 
     @Override
