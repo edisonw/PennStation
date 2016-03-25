@@ -6,16 +6,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * @author edi
- */
-@Target(value = ElementType.TYPE)
+@Target(value = ElementType.ANNOTATION_TYPE)
 @Retention(value = RetentionPolicy.CLASS)
 @Inherited
-public @interface ResultClassWithVariables {
-    String classPostFix() default "";
-
-    Class baseClass() default Default.class;
-
-    ParcelableClassField[] fields() default {};
+public @interface Kind {
+    Class clazz();
+    Class parameter() default Default.class;
 }

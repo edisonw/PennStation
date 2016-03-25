@@ -8,10 +8,11 @@ import android.util.Log;
 
 import com.edisonwang.ps.annotations.ClassField;
 import com.edisonwang.ps.annotations.EventProducer;
+import com.edisonwang.ps.annotations.Kind;
 import com.edisonwang.ps.annotations.ParcelableClassField;
-import com.edisonwang.ps.annotations.RequestFactory;
-import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
-import com.edisonwang.ps.annotations.ResultClassWithVariables;
+import com.edisonwang.ps.annotations.RequestAction;
+import com.edisonwang.ps.annotations.RequestActionHelper;
+import com.edisonwang.ps.annotations.EventClass;
 import com.edisonwang.ps.lib.Action;
 import com.edisonwang.ps.lib.ActionKey;
 import com.edisonwang.ps.lib.ActionRequest;
@@ -20,6 +21,8 @@ import com.edisonwang.ps.lib.ActionResult;
 import com.edisonwang.ps.lib.EventServiceImpl;
 import com.edisonwang.ps.lib.parcelers.ParcelableParceler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -29,33 +32,38 @@ import java.util.Random;
         ComplicatedAction.SampleActionSuccessEvent.class,
         ComplicatedAction.SampleActionFailedEvent.class
 }, generated = {
-        @ResultClassWithVariables(classPostFix = "Sample", baseClass = ActionResult.class,
+        @EventClass(classPostFix = "Sample", baseClass = ActionResult.class,
                 fields = {
                         @ParcelableClassField(
                                 name = "sampleParam3",
-                                kind = String.class,
+                                kind = @Kind(clazz = String.class),
                                 parceler = SampleStringParceler.class),
                         @ParcelableClassField(
                                 name = "sampleParcelable",
-                                kind = ComplicatedAction.SampleParcelable.class,
+                                kind = @Kind(clazz = ComplicatedAction.SampleParcelable.class),
                                 parceler = ParcelableParceler.class,
                                 required = false
                         ),
                         @ParcelableClassField(
                                 name = "defaultParcelable",
-                                kind = double.class
-                        )
+                                kind = @Kind(clazz = double.class)
+                        ),
+                        @ParcelableClassField(
+                                name = "sampleStringList",
+                                kind = @Kind(clazz = List.class, parameter = String.class),
+                                required = false
+                        ),
                 }),
 })
-@RequestFactory(
+@RequestAction(
         baseClass = ActionKey.class,
         valueType = Action.class,
         group = "Sample"
 )
-@RequestFactoryWithVariables(baseClass = ActionRequestHelper.class, variables = {
-        @ClassField(name = "sampleParam", kind = String.class),
-        @ClassField(name = "sampleParamTwo", kind = ComplicatedAction.SampleParcelable.class),
-        @ClassField(name = "shouldFail", kind = boolean.class)
+@RequestActionHelper(baseClass = ActionRequestHelper.class, variables = {
+        @ClassField(name = "sampleParam", kind = @Kind(clazz = String.class)),
+        @ClassField(name = "sampleParamTwo", kind =  @Kind(clazz = ComplicatedAction.SampleParcelable.class)),
+        @ClassField(name = "shouldFail", kind =  @Kind(clazz = boolean.class))
 }
 )
 public class ComplicatedAction implements Action {
@@ -74,7 +82,13 @@ public class ComplicatedAction implements Action {
             if (sRandom.nextInt() % 2 == 0) {
                 return new SampleActionSuccessEvent(helper.sampleParam(), helper.sampleParamTwo());
             } else {
-                return new ComplicatedActionEventSample("sampleParam3", 0);
+                ComplicatedActionEventSample event = new ComplicatedActionEventSample("sampleParam3", 0);
+                ArrayList<String> someRandomList = new ArrayList<>();
+                for (int i = 0; i < 5; i++) {
+                    someRandomList.add(String.valueOf(sRandom.nextInt(59) + 1));
+                }
+                event.sampleStringList = someRandomList;
+                return event;
             }
         }
     }

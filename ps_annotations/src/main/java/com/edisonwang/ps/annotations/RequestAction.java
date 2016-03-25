@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.CLASS)
 @Inherited
-public @interface RequestFactory {
+public @interface RequestAction {
 
     Class baseClass() default Default.class; //Action.java
 

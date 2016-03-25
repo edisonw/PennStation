@@ -4,11 +4,12 @@ import com.edisonwang.ps.annotations.ClassField;
 import com.edisonwang.ps.annotations.Default;
 import com.edisonwang.ps.annotations.EventListener;
 import com.edisonwang.ps.annotations.EventProducer;
+import com.edisonwang.ps.annotations.Kind;
 import com.edisonwang.ps.annotations.ParcelableClassField;
-import com.edisonwang.ps.annotations.RequestFactory;
-import com.edisonwang.ps.annotations.RequestFactoryWithClass;
-import com.edisonwang.ps.annotations.RequestFactoryWithVariables;
-import com.edisonwang.ps.annotations.ResultClassWithVariables;
+import com.edisonwang.ps.annotations.RequestAction;
+import com.edisonwang.ps.annotations.RequestActionHelperFactory;
+import com.edisonwang.ps.annotations.RequestActionHelper;
+import com.edisonwang.ps.annotations.EventClass;
 import com.google.auto.service.AutoService;
 import com.google.common.base.Joiner;
 import com.squareup.javapoet.ArrayTypeName;
@@ -60,9 +61,9 @@ public class PennStationProcessor extends AbstractProcessor {
 
     static {
         HashSet<String> set = new HashSet<>();
-        set.add(RequestFactory.class.getCanonicalName());
-        set.add(RequestFactoryWithClass.class.getCanonicalName());
-        set.add(RequestFactoryWithVariables.class.getCanonicalName());
+        set.add(RequestAction.class.getCanonicalName());
+        set.add(RequestActionHelperFactory.class.getCanonicalName());
+        set.add(RequestActionHelper.class.getCanonicalName());
         set.add(EventListener.class.getCanonicalName());
         set.add(EventProducer.class.getCanonicalName());
         set.add(ClassField.class.getCanonicalName());
@@ -105,14 +106,14 @@ public class PennStationProcessor extends AbstractProcessor {
 
     private boolean processRequestFactory(RoundEnvironment roundEnv) {
         // Iterate over all @Factory annotated elements
-        for (Element element : roundEnv.getElementsAnnotatedWith(RequestFactory.class)) {
+        for (Element element : roundEnv.getElementsAnnotatedWith(RequestAction.class)) {
             // Check if a class has been annotated with @Factory
             if (element.getKind() != ElementKind.CLASS) {
-                error(element, "You cannot annotate " + element.getSimpleName() + " with " + RequestFactory.class);
+                error(element, "You cannot annotate " + element.getSimpleName() + " with " + RequestAction.class);
                 return true;
             }
             TypeElement classElement = (TypeElement) element;
-            RequestFactory annotationElement = classElement.getAnnotation(RequestFactory.class);
+            RequestAction annotationElement = classElement.getAnnotation(RequestAction.class);
 
             //Groups of Objects, named.
             String baseClassString;
@@ -130,7 +131,7 @@ public class PennStationProcessor extends AbstractProcessor {
             if (baseClassString == null) {
                 throw new IllegalArgumentException(
                         String.format("valueType() in @%s for class %s is null or empty! that's not allowed",
-                                RequestFactory.class.getSimpleName(), classElement.getQualifiedName().toString()));
+                                RequestAction.class.getSimpleName(), classElement.getQualifiedName().toString()));
             }
 
             String valueClassString;
@@ -144,7 +145,7 @@ public class PennStationProcessor extends AbstractProcessor {
             if (valueClassString == null) {
                 throw new IllegalArgumentException(
                         String.format("valueType() in @%s for class %s is null or empty! that's not allowed",
-                                RequestFactory.class.getSimpleName(), classElement.getQualifiedName().toString()));
+                                RequestAction.class.getSimpleName(), classElement.getQualifiedName().toString()));
             }
 
             if (Default.class.getCanonicalName().equals(valueClassString)) {
@@ -180,12 +181,12 @@ public class PennStationProcessor extends AbstractProcessor {
                     TypeSpec.anonymousClassBuilder("new $L()", classElement) //Empty Constructor required.
                             .build());
 
-            RequestFactoryWithClass factoryAnnotation = classElement.getAnnotation(RequestFactoryWithClass.class);
+            RequestActionHelperFactory factoryAnnotation = classElement.getAnnotation(RequestActionHelperFactory.class);
             if (factoryAnnotation != null) {
                 addFactoryMethodToGroupSpec(factoryAnnotation, classElement, enumName, groupSpec);
             }
 
-            RequestFactoryWithVariables variables = classElement.getAnnotation(RequestFactoryWithVariables.class);
+            RequestActionHelper variables = classElement.getAnnotation(RequestActionHelper.class);
 
             if (variables != null) {
                 addFactoryAndFactoryMethod(variables, classElement, enumName, groupSpec, packageName + enumClass, baseClassString);
@@ -198,7 +199,7 @@ public class PennStationProcessor extends AbstractProcessor {
         return true;
     }
 
-    private void addFactoryAndFactoryMethod(RequestFactoryWithVariables anno, TypeElement classElement,
+    private void addFactoryAndFactoryMethod(RequestActionHelper anno, TypeElement classElement,
                                             String enumName, TypeSpec.Builder groupSpec, String groupId, String keyReturnClass) {
 
         String baseClassString;
@@ -216,7 +217,7 @@ public class PennStationProcessor extends AbstractProcessor {
         if (baseClassString == null) {
             throw new IllegalArgumentException(
                     String.format("baseClass() in @%s for class %s is null or empty! that's not allowed",
-                            RequestFactoryWithVariables.class.getSimpleName(), classElement.getQualifiedName().toString()));
+                            RequestActionHelper.class.getSimpleName(), classElement.getQualifiedName().toString()));
         }
 
         //Only primitives are supported.
@@ -263,14 +264,9 @@ public class PennStationProcessor extends AbstractProcessor {
                 .returns(ClassName.bestGuess(qualifiedName));
 
         for (ClassField variable : variables) {
+            ParsedKind kind = parseKind(variable.kind());
+            TypeName kindClassName = kind.type;
             String name = variable.name();
-            String kindName;
-            try {
-                kindName = variable.kind().getCanonicalName();
-            } catch (MirroredTypeException mte) {
-                kindName = mte.getTypeMirror().toString();
-            }
-            TypeName kindClassName = guessTypeName(kindName);
             if (variable.required()) {
                 requiredNames.add(name);
                 ctr.addParameter(ParameterSpec.builder(kindClassName, name).build());
@@ -280,7 +276,7 @@ public class PennStationProcessor extends AbstractProcessor {
             typeBuilder.addMethod(MethodSpec.methodBuilder(name).addStatement(
                     "Object r = get(\"" + name + "\")"
             ).returns(kindClassName).addStatement(
-                    "return r == null ? null : (" + kindName + ") r"
+                    "return r == null ? null : (" + kind.name + ") r"
             ).addModifiers(Modifier.PUBLIC).build());
             typeBuilder.addMethod(MethodSpec.methodBuilder(name).addParameter(
                     kindClassName, "value"
@@ -300,7 +296,37 @@ public class PennStationProcessor extends AbstractProcessor {
         groupSpec.addMethod(factoryMethod.build());
     }
 
-    private void addFactoryMethodToGroupSpec(RequestFactoryWithClass factoryAnnotation,
+    private ParsedKind parseKind(Kind kind) {
+        String kindName;
+        String kindParam;
+        try {
+            kindName = kind.clazz().getCanonicalName();
+        } catch (MirroredTypeException mte) {
+            kindName = mte.getTypeMirror().toString();
+        }
+        try {
+            kindParam = kind.parameter().getCanonicalName();
+        } catch (MirroredTypeException mte) {
+            kindParam = mte.getTypeMirror().toString();
+        }
+        String className;
+        TypeName classType;
+        String baseName;
+        if (!kindParam.equals(Default.class.getCanonicalName())) {
+            ClassName kindClassName = ClassName.bestGuess(kindName);
+            TypeName kindParamName = guessTypeName(kindParam);
+            classType = ParameterizedTypeName.get(kindClassName, kindParamName);
+            className = kindName + "<" + kindParam + ">";
+            baseName = kindName;
+        } else {
+            classType = guessTypeName(kindName);
+            className = kindName;
+            baseName = className;
+        }
+        return new ParsedKind(classType, className, baseName);
+    }
+
+    private void addFactoryMethodToGroupSpec(RequestActionHelperFactory factoryAnnotation,
                                              TypeElement classElement, String enumName,
                                              TypeSpec.Builder groupSpec) {
         TypeMirror factoryClassMirror = null;
@@ -313,7 +339,7 @@ public class PennStationProcessor extends AbstractProcessor {
         if (factoryClassMirror == null) {
             throw new IllegalArgumentException(
                     String.format("factoryClass() in @%s for class %s is null or empty! that's not allowed",
-                            RequestFactoryWithClass.class.getSimpleName(),
+                            RequestActionHelperFactory.class.getSimpleName(),
                             classElement.getQualifiedName().toString()));
         }
 
@@ -389,7 +415,7 @@ public class PennStationProcessor extends AbstractProcessor {
                 return null;
             }
 
-            for (ResultClassWithVariables resultEvent : eventProducer.generated()) {
+            for (EventClass resultEvent : eventProducer.generated()) {
                 events.add(generateResultClass(typed, resultEvent));
             }
 
@@ -399,7 +425,7 @@ public class PennStationProcessor extends AbstractProcessor {
         return events;
     }
 
-    private String generateResultClass(TypeElement typed, ResultClassWithVariables resultEvent) {
+    private String generateResultClass(TypeElement typed, EventClass resultEvent) {
         String baseClassString;
         try {
             baseClassString = resultEvent.baseClass().getCanonicalName();
@@ -415,12 +441,6 @@ public class PennStationProcessor extends AbstractProcessor {
 
         ParcelableClassField[] fields = resultEvent.fields();
         for (ParcelableClassField field : fields) {
-            String kindName;
-            try {
-                kindName = field.kind().toString();
-            } catch (MirroredTypeException mte) {
-                kindName = mte.getTypeMirror().toString();
-            }
             String parcelerName;
             try {
                 parcelerName = field.parceler().getCanonicalName();
@@ -432,7 +452,7 @@ public class PennStationProcessor extends AbstractProcessor {
                 parcelerName = "com.edisonwang.ps.lib.parcelers.DefaultParceler";
             }
 
-            parsed.add(new ParcelableClassFieldParsed(field.name(), kindName,
+            parsed.add(new ParcelableClassFieldParsed(field.name(), parseKind(field.kind()),
                     parcelerName, field.required()));
         }
 
@@ -452,14 +472,14 @@ public class PennStationProcessor extends AbstractProcessor {
                     .superclass(guessTypeName(baseClassString));
 
             for (ParcelableClassFieldParsed p : parsed) {
-                typeBuilder.addField(guessTypeName(p.kindName), p.name, Modifier.PUBLIC);
+                typeBuilder.addField(p.kind.type, p.name, Modifier.PUBLIC);
             }
 
             MethodSpec.Builder ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
 
             for (ParcelableClassFieldParsed p : parsed) {
                 if (p.required) {
-                    ctr.addParameter(guessTypeName(p.kindName), p.name);
+                    ctr.addParameter(p.kind.type, p.name);
                     ctr.addStatement("this.$L = $L", p.name, p.name);
                 }
             }
@@ -468,7 +488,7 @@ public class PennStationProcessor extends AbstractProcessor {
             ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
             ctr.addParameter(guessTypeName("android.os.Parcel"), "in");
             for (ParcelableClassFieldParsed p : parsed) {
-                ctr.addStatement("\tthis." + p.name + " = (" + p.kindName + ")" + p.parcelerName + ".readFromParcel(in, " + p.kindName + ".class)");
+                ctr.addStatement("\tthis." + p.name + " = (" + p.kind.name + ")" + p.parcelerName + ".readFromParcel(in, " + p.kind.base + ".class)");
             }
             typeBuilder.addMethod(ctr.build());
             typeBuilder.addMethod(MethodSpec.methodBuilder("describeContents")
@@ -615,14 +635,14 @@ public class PennStationProcessor extends AbstractProcessor {
     private static class ParcelableClassFieldParsed {
 
         public final String name;
-        public final String kindName;
+        public final ParsedKind kind;
         public final String parcelerName;
         public final boolean required;
 
-        public ParcelableClassFieldParsed(String name, String kindName,
+        public ParcelableClassFieldParsed(String name, ParsedKind kind,
                                           String parcelerName, boolean required) {
             this.name = name;
-            this.kindName = kindName;
+            this.kind = kind;
             this.parcelerName = parcelerName;
             this.required = required;
         }

@@ -66,14 +66,15 @@ For each action the service needs to perform:
 
 * Write the actions you want the event service to take. ([Full SampleAction])
 * Tag it with @EventProducer with the events it will emit.
-* Tag it with @RequestFactory so it will be registered.
-* Optional: Tag it with @RequestFactoryWithVariables so convenience factories will be created.
-* Optional: Tag it with @RequestFactoryWithClass so convenience methods will be added.
+* Tag it with @RequestAction so it will be registered.
+* Optional: Tag it with @RequestActionHelper so convenience factories will be created.
+* Optional: Tag it with @RequestActionHelperFactory so convenience methods will be added.
 
 For class that owns [event listeners]:
 
+* Annotate with @EventListener with list of producers.
 * Write the listeners that listens to those events and XXXEventListener will be generated.
-* Implement the listeners and (un)register it via Events.registerListener().
+* Implement the listeners and (un)register it via PennStation.registerListener().
 
 [Simple Usage]: https://github.com/edisonw/PennStation/wiki/Simple-Usage
 [PennStation]: https://github.com/edisonw/Ipes
