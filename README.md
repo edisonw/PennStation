@@ -48,8 +48,8 @@ apt {
     processor "com.edisonwang.ps.processors.PennStationProcessor"
 }
 dependencies {
-    apt 'com.edisonwang.ps:ps_processors:1.0.3'
-    compile 'com.edisonwang.ps:ps_lib:1.0.3'
+    apt 'com.edisonwang.ps:ps_processors:1.1.+'
+    compile 'com.edisonwang.ps:ps_lib:1.1.+'
 }
 ```
 
