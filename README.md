@@ -21,7 +21,8 @@ It turns out, it does a great job scaling apps as it uses a Fully Decopuled MVC 
  
 # Usages
 
-[Simple Usage]
+* [Simple Usage]
+* [Tumblr Search Demo]
  
 # Setup
 
@@ -76,6 +77,7 @@ For class that owns [event listeners]:
 * Write the listeners that listens to those events and XXXEventListener will be generated.
 * Implement the listeners and (un)register it via PennStation.registerListener().
 
+[Tumblr Search Demo]: https://github.com/edisonw/PennStationTumblrDemo
 [Simple Usage]: https://github.com/edisonw/PennStation/wiki/Simple-Usage
 [PennStation]: https://github.com/edisonw/Ipes
 [EventBus]: https://github.com/google/guava/wiki/EventBusExplained
