@@ -24,6 +24,7 @@ import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.annotation.IncompleteAnnotationException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -416,7 +417,12 @@ public class PennStationProcessor extends AbstractProcessor {
             }
 
             for (EventClass resultEvent : eventProducer.generated()) {
-                events.add(generateResultClass(typed, resultEvent));
+                try {
+                    events.add(generateResultClass(typed, resultEvent));
+                } catch (IncompleteAnnotationException e) {
+                    System.err.println("Incomplete annotation found for " + typed.getQualifiedName());
+                    throw e;
+                }
             }
 
             producerEvents.put(typed.getQualifiedName().toString(), events);
