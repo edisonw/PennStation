@@ -45,9 +45,6 @@ apply plugin: 'com.neenbedankt.android-apt'
 repositories {
     jcenter()
 }
-apt {
-    processor "com.edisonwang.ps.processors.PennStationProcessor"
-}
 dependencies {
     apt 'com.edisonwang.ps:ps_processors:1.1.+'
     compile 'com.edisonwang.ps:ps_lib:1.1.+'

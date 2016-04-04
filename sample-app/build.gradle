@@ -34,10 +34,6 @@ android {
     }
 }
 
-apt {
-    processor "com.edisonwang.ps.processors.PennStationProcessor"
-}
-
 dependencies {
     /*
     Replace with the following in your own project.
