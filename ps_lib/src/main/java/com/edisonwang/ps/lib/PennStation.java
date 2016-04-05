@@ -1,12 +1,6 @@
 package com.edisonwang.ps.lib;
 
 import android.app.Application;
-import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.util.Log;
-
-import de.greenrobot.event.EventBus;
 
 /**
  * @author edi
@@ -22,6 +16,7 @@ public class PennStation {
     public static class PennStationOptions {
         public final Class<? extends EventService> eventServiceClass;
         public boolean logRequestStacks;
+        public int pendingWarningThreshold;
 
         public PennStationOptions(Class<? extends EventService> eventServiceClass) {
             this.eventServiceClass = eventServiceClass;
@@ -31,7 +26,7 @@ public class PennStation {
     /**
      * You can call this inside Application.onCreate();
      * <p/>
-     * This only needs to called once, call getInstance() after.
+     * This only needs to called once, call getManager() after.
      *
      * @return the instance that was created for this process.
      */
@@ -43,7 +38,7 @@ public class PennStation {
         return sManager;
     }
 
-    public static EventManager getInstance() {
+    public static EventManager getManager() {
         if (sManager == null) {
             throw new IllegalStateException("You must call init() before using the instance. ");
         }
@@ -51,107 +46,39 @@ public class PennStation {
     }
 
     public static void postLocalStickyEvent(Object object) {
-        getInstance().postLocalStickyEvent(object);
+        getManager().postLocalStickyEvent(object);
     }
 
     public static void postLocalEvent(Object object) {
-        getInstance().postLocalEvent(object);
+        getManager().postLocalEvent(object);
     }
 
     public static void registerListener(Object object) {
-        getInstance().registerListener(object);
+        getManager().registerListener(object);
     }
 
     public static void unRegisterListener(Object object) {
-        getInstance().unRegisterListener(object);
+        getManager().unRegisterListener(object);
     }
 
     public static String requestAction(ActionRequestHelper request) {
-        return getInstance().requestAction(request.buildRequest());
+        return getManager().requestAction(request.buildRequest());
     }
 
     public static String requestAction(ActionRequest request) {
-        return getInstance().requestAction(request);
+        return getManager().requestAction(request);
+    }
+
+    /**
+     * Cancel a request that has not started running yet.
+     * @param requestId the request id,
+     */
+    public static void cancelAction(String requestId) {
+        getManager().cancel(requestId);
     }
 
     public <T> T getStickyEvent(Class<T> eventType) {
-        return getInstance().getStickyEvent(eventType);
+        return getManager().getStickyEvent(eventType);
     }
 
-    public static class EventManager {
-
-        private final EventServiceImpl.EventServiceConnection mServiceConnection;
-        private final EventBus mBus;
-        private final PennStationOptions mOptions;
-
-        private EventManager(Context context, PennStationOptions options) {
-            mBus = new EventBus();
-            mOptions = options;
-            EventServiceImpl.EventServiceResponseHandler mServiceResponseHandler =
-                    new EventServiceImpl.EventServiceResponseHandler() {
-                        @Override
-                        public void handleServiceResponse(Bundle b) {
-                            final String reqId = b.getString(EventServiceImpl.EventServiceConnection.EXTRA_REQUEST_ID);
-
-                            if (reqId == null) {
-                                //The service requestAction was not made by an app controller.
-                                return;
-                            }
-
-                            mServiceConnection.remove(reqId);
-                            ActionResult result = b.getParcelable(EventServiceImpl.EXTRA_SERVICE_RESULT);
-
-                            if (result != null) {
-                                result.setResponseInfo(new ResponseInfo(b));
-                                if (result.postSticky()) {
-                                    postLocalStickyEvent(result);
-                                } else {
-                                    postLocalEvent(result);
-                                }
-                            }
-                        }
-                    };
-            mServiceConnection = new EventServiceImpl.EventServiceConnection(context, mServiceResponseHandler);
-            context.bindService(new Intent(context, options.eventServiceClass), mServiceConnection,
-                    Context.BIND_AUTO_CREATE);
-        }
-
-        public void postLocalStickyEvent(Object object) {
-            mBus.postSticky(object);
-        }
-
-        public void postLocalEvent(Object object) {
-            mBus.post(object);
-        }
-
-        public void registerListener(Object object) {
-            mBus.register(object);
-        }
-
-        public void unRegisterListener(Object object) {
-            mBus.unregister(object);
-        }
-
-        public EventBus getEventBus() {
-            return mBus;
-        }
-
-        public <T> T getStickyEvent(Class<T> eventType) {
-            return mBus.getStickyEvent(eventType);
-        }
-
-        public String requestAction(ActionRequestHelper helper) {
-            return requestAction(helper.buildRequest());
-        }
-
-        public String requestAction(ActionRequest request) {
-            Bundle bundle = new Bundle();
-            bundle.putParcelable(EventServiceImpl.EXTRA_SERVICE_REQUEST, request);
-            if (mOptions.logRequestStacks) {
-                bundle.putString(EventServiceImpl.EXTRA_STACKTRACE_STRING,
-                        Log.getStackTraceString(new Exception()));
-            }
-            return mServiceConnection.queueAndExecute(bundle);
-        }
-    }
 }
