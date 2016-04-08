@@ -18,8 +18,6 @@ import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * @author edi
@@ -27,6 +25,11 @@ import java.util.concurrent.Executors;
 public class EventServiceImpl<T extends Service> {
 
     public static final String TAG = "EventService";
+
+    public static final String EXTRA_REQUEST_QUEUE_PRIORITY = "extra_request_priority";
+    public static final String EXTRA_REQUEST_QUEUE_LIMIT = "extra_request_queue_limit";
+    public static final String EXTRA_REQUEST_QUEUE_NEW_THREAD = "extra_request_queue_new_thread";
+    public static final String EXTRA_REQUEST_QUEUE_TAG = "extra_request_queue_tag";
 
     public static final String EXTRA_REQUEST_ID = "extra_request_id";
     public static final String EXTRA_SERVICE_REQUEST = "extra_service_request";
@@ -39,7 +42,7 @@ public class EventServiceImpl<T extends Service> {
 
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private final T mService;
-    private ExecutorService mExecutor;
+    private ActionExecutor mExecutor;
     private final int[] mTaskLock = new int[0];
     private final HashMap<String, ExecutionRunnable> mSubmittedTasks = new HashMap<>();
     private final Messenger mMessenger = new Messenger(new EventServiceHandler(new WeakReference<EventServiceImpl>(this)));
@@ -51,7 +54,7 @@ public class EventServiceImpl<T extends Service> {
     }
 
     void onCreate() {
-        mExecutor = Executors.newCachedThreadPool();
+        mExecutor = new ActionExecutor();
         mStartIds = new LinkedHashMap<>(50, 50);
     }
 
@@ -72,7 +75,7 @@ public class EventServiceImpl<T extends Service> {
         } else {
             responder = null;
         }
-        mExecutor.execute(new ExecutionRunnable(startId, bundle, responder, null));
+        performRequest(new ExecutionRunnable(startId, bundle, responder, null));
         mStartIds.put(startId, false);
         return Service.START_STICKY;
     }
@@ -222,6 +225,7 @@ public class EventServiceImpl<T extends Service> {
         private final Messenger mMessenger;
         private final SpiralServiceResponder mResponder;
         private final String mRequestId;
+
         private boolean mCanceled;
 
         // Optionally either responder or messenger will be used to send response back to ui
@@ -278,6 +282,10 @@ public class EventServiceImpl<T extends Service> {
         public void setCanceled(boolean canceled) {
             mCanceled = canceled;
         }
+
+        public Bundle getBundle() {
+            return mBundle;
+        }
     }
 
     private void cancelRequest(Message msg) {
@@ -292,15 +300,26 @@ public class EventServiceImpl<T extends Service> {
     }
 
     private void performRequest(Message msg) {
-        final Bundle data = msg.getData();
+        performRequest(new ExecutionRunnable(0, msg.getData(), null, msg.replyTo));
+    }
+
+    private void performRequest(ExecutionRunnable task) {
+        final Bundle data = task.getBundle();
         data.setClassLoader(mService.getClassLoader());
-        ExecutionRunnable task = new ExecutionRunnable(0, data, null, msg.replyTo);
         if (task.mRequestId != null) {
             synchronized (mTaskLock) {
                 mSubmittedTasks.put(task.mRequestId, task);
             }
         }
-        mExecutor.execute(task);
+        if (data.getBoolean(EventServiceImpl.EXTRA_REQUEST_QUEUE_NEW_THREAD, true)) {
+            mExecutor.executeOnNewThread(task);
+        } else {
+            final int queueLimit = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_LIMIT, 2);
+            final String tag = data.getString(EventServiceImpl.EXTRA_REQUEST_QUEUE_TAG);
+            final String queueTag = tag != null ? tag : ActionExecutor.DEFAULT;
+            final int queuePriority = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_PRIORITY, 0);
+            mExecutor.execute(task, queueLimit, queueTag, queuePriority);
+        }
     }
 
     private static class EventServiceHandler extends Handler {
