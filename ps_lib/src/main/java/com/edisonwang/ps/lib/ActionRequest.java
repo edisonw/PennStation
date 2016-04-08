@@ -73,4 +73,8 @@ public class ActionRequest implements Parcelable {
     public String toString() {
         return mActionKey + " with args: " + (mArgs != null ? mArgs.toString() : "No arguments supplied.");
     }
+
+    public Class<? extends Action> type() {
+        return mActionKey.value().getClass();
+    }
 }

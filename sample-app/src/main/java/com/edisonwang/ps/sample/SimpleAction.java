@@ -1,6 +1,7 @@
 package com.edisonwang.ps.sample;
 
 import android.os.Bundle;
+import android.util.Log;
 
 import com.edisonwang.ps.annotations.EventProducer;
 import com.edisonwang.ps.annotations.RequestAction;
@@ -23,6 +24,12 @@ public class SimpleAction implements Action {
 
     @Override
     public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest, Bundle bundle) {
+        try {
+            //Pretend this takes 3s to execute.
+            Thread.sleep(3 * 1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return new SimpleActionEvent();
     }
 }

@@ -1,10 +1,7 @@
 package com.edisonwang.ps.lib;
 
 import android.app.Service;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,6 +14,7 @@ import android.os.Parcelable;
 import android.os.Process;
 import android.util.Log;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,34 +28,34 @@ public class EventServiceImpl<T extends Service> {
 
     public static final String TAG = "EventService";
 
+    public static final String EXTRA_REQUEST_ID = "extra_request_id";
     public static final String EXTRA_SERVICE_REQUEST = "extra_service_request";
     public static final String EXTRA_SERVICE_RESULT = "extra_service_result";
     public static final String EXTRA_CALLBACK = "extra_callback";
     public static final String EXTRA_STACKTRACE_STRING = "extra_stack_trace_string";
 
+    static final int PERFORM_REQUEST = 0;
+    static final int CANCEL_REQUEST = 1;
+
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private final T mService;
     private ExecutorService mExecutor;
-    private final Messenger mMessenger = new Messenger(new Handler() {
+    private final int[] mTaskLock = new int[0];
+    private final HashMap<String, ExecutionRunnable> mSubmittedTasks = new HashMap<>();
+    private final Messenger mMessenger = new Messenger(new EventServiceHandler(new WeakReference<EventServiceImpl>(this)));
 
-        @Override
-        public void handleMessage(Message msg) {
-            msg.getData().setClassLoader(mService.getClassLoader());
-            mExecutor.execute(new ExecutionRunnable(0, msg.getData(), null, msg.replyTo));
-        }
-    });
     private LinkedHashMap<Integer, Boolean> mStartIds;
 
     public EventServiceImpl(T service) {
         mService = service;
     }
 
-    public void onCreate() {
+    void onCreate() {
         mExecutor = Executors.newCachedThreadPool();
         mStartIds = new LinkedHashMap<>(50, 50);
     }
 
-    public int onStartCommand(Intent intent, int flags, int startId) {
+    int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null) {
             Log.e(TAG, "Invalid intent sent to service. (null intent)");
             return Service.START_NOT_STICKY;
@@ -79,7 +77,7 @@ public class EventServiceImpl<T extends Service> {
         return Service.START_STICKY;
     }
 
-    public IBinder onBind(Intent intent) {
+    IBinder onBind(Intent intent) {
         return mMessenger.getBinder();
     }
 
@@ -112,7 +110,7 @@ public class EventServiceImpl<T extends Service> {
         public abstract void onServiceResponse(Bundle bundle);
     }
 
-    public static class EventServiceCallback implements Parcelable {
+    static class EventServiceCallback implements Parcelable {
 
         public static final Creator<EventServiceCallback> CREATOR =
                 new Creator<EventServiceCallback>() {
@@ -169,121 +167,6 @@ public class EventServiceImpl<T extends Service> {
 
     }
 
-    public static class EventServiceConnection implements ServiceConnection {
-
-        public static final String EXTRA_REQUEST_ID = "connection_request_id";
-        public static final String EXTRA_REQUEST_TIME_MS = "connection_request_time";
-        private final HashMap<String, Bundle> mPendingQueue = new HashMap<>();
-        private final HashMap<String, Bundle> mRequestQueue = new HashMap<>();
-        private final int[] mLock = {};
-        private final Context mContext;
-        private final EventServiceResponseHandler mResponseHandler;
-        private Messenger mService;
-        private Messenger mResponder;
-
-        public EventServiceConnection(Context context, EventServiceResponseHandler handler) {
-            mContext = context;
-            mResponseHandler = handler;
-        }
-
-        public String queueAndExecute(Bundle bundle) {
-            final String reqId = generateRequestId();
-            bundle.putString(EXTRA_REQUEST_ID, reqId);
-            bundle.putLong(EXTRA_REQUEST_TIME_MS, System.currentTimeMillis());
-            synchronized (mLock) {
-                Messenger service = mService;
-                if (service != null) {
-                    mRequestQueue.put(reqId, bundle);
-                    sendMessage(service, createMessage(bundle));
-                } else {
-                    mPendingQueue.put(reqId, bundle);
-                }
-            }
-            return reqId;
-        }
-
-        public void cancelAll() {
-            synchronized (mLock) {
-                mRequestQueue.clear();
-                mPendingQueue.clear();
-            }
-        }
-
-        private Message createMessage(Bundle bundle) {
-            final Message msg = Message.obtain();
-            msg.setData(bundle);
-            msg.replyTo = getServiceResponder();
-            return msg;
-        }
-
-        private synchronized Messenger getServiceResponder() {
-            if (mResponder == null) {
-                mResponder = new Messenger(new Handler(Looper.getMainLooper()) {
-                    @Override
-                    public void handleMessage(Message msg) {
-                        Bundle bundle = null;
-                        try {
-                            Bundle b = msg.getData();
-                            b.setClassLoader(mContext.getClassLoader());
-                            bundle = b;
-                        } catch (Throwable e) {
-                            //Bundling error during IPC. Ignore.
-                        }
-                        mResponseHandler.handleServiceResponse(bundle);
-                    }
-                });
-            }
-            return mResponder;
-        }
-
-        private void sendMessage(Messenger service, Message msg) {
-            try {
-                service.send(msg);
-            } catch (Throwable e) {
-                Log.e(TAG, "Unable to send message to service.", e);
-            }
-        }
-
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder binder) {
-            synchronized (mLock) {
-                Messenger service = new Messenger(binder);
-                mService = service;
-                mRequestQueue.putAll(mPendingQueue);
-                for (Bundle action : mPendingQueue.values()) {
-                    sendMessage(service, createMessage(action));
-                }
-                mPendingQueue.clear();
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            synchronized (mLock) {
-                mService = null;
-            }
-        }
-
-        public boolean isPending(String requestId) {
-            synchronized (mLock) {
-                return mRequestQueue.containsKey(requestId);
-            }
-        }
-
-        public Bundle remove(String requestId) {
-            synchronized (mLock) {
-                Bundle action = mRequestQueue.get(requestId);
-                mRequestQueue.remove(requestId);
-                return action;
-            }
-        }
-
-        public String generateRequestId() {
-            //Generate a six letter requestAction ID.
-            return Long.toHexString(Double.doubleToLongBits(Math.random()));
-        }
-    }
-
     private class ResponderRunnable implements Runnable {
         private final SpiralServiceResponder mResponder;
         private final Bundle mBundle;
@@ -338,17 +221,24 @@ public class EventServiceImpl<T extends Service> {
         private final Bundle mBundle;
         private final Messenger mMessenger;
         private final SpiralServiceResponder mResponder;
+        private final String mRequestId;
+        private boolean mCanceled;
 
         // Optionally either responder or messenger will be used to send response back to ui
         public ExecutionRunnable(int startId, Bundle bundle,
                                  SpiralServiceResponder responder, Messenger messenger) {
             mStartId = startId;
+            mRequestId = bundle.getString(EXTRA_REQUEST_ID);
             mBundle = bundle;
             mResponder = responder;
             mMessenger = messenger;
         }
 
         public void run() {
+            if (canceled()) {
+                Log.d(TAG, "Task " + mRequestId + " was not executed.");
+                return;
+            }
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
             ActionResult result = null;
@@ -370,6 +260,71 @@ public class EventServiceImpl<T extends Service> {
 
             if (responderRunnable != null) {
                 mMainHandler.post(responderRunnable);
+            }
+            if (mRequestId != null) {
+                synchronized (mTaskLock) {
+                    Log.d(TAG, "Task " + mRequestId + " was completed.");
+                    mSubmittedTasks.remove(mRequestId);
+                }
+            }
+        }
+
+        public boolean canceled() {
+            synchronized (mTaskLock) {
+                return mCanceled;
+            }
+        }
+
+        public void setCanceled(boolean canceled) {
+            mCanceled = canceled;
+        }
+    }
+
+    private void cancelRequest(Message msg) {
+        Bundle data = msg.getData();
+        String reqId = data.getString(EXTRA_REQUEST_ID);
+        synchronized (mTaskLock) {
+            ExecutionRunnable runningTask = mSubmittedTasks.remove(reqId);
+            if (runningTask != null) {
+                runningTask.setCanceled(true);
+            }
+        }
+    }
+
+    private void performRequest(Message msg) {
+        final Bundle data = msg.getData();
+        data.setClassLoader(mService.getClassLoader());
+        ExecutionRunnable task = new ExecutionRunnable(0, data, null, msg.replyTo);
+        if (task.mRequestId != null) {
+            synchronized (mTaskLock) {
+                mSubmittedTasks.put(task.mRequestId, task);
+            }
+        }
+        mExecutor.execute(task);
+    }
+
+    private static class EventServiceHandler extends Handler {
+
+        private final WeakReference<EventServiceImpl> mServiceImpl;
+
+        private EventServiceHandler(WeakReference<EventServiceImpl> serviceImpl) {
+            mServiceImpl = serviceImpl;
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            EventServiceImpl serviceImpl = mServiceImpl.get();
+            if (serviceImpl != null) {
+                switch (msg.what) {
+                    case PERFORM_REQUEST:
+                        serviceImpl.performRequest(msg);
+                        break;
+                    case CANCEL_REQUEST:
+                        serviceImpl.cancelRequest(msg);
+                        break;
+                }
+            } else {
+                Log.e(TAG, "ServiceImpl is already dead.");
             }
         }
     }

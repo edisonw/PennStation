@@ -10,6 +10,7 @@ import android.widget.EditText;
 import com.edisonwang.ps.annotations.EventListener;
 import com.edisonwang.ps.lib.EventService;
 import com.edisonwang.ps.lib.PennStation;
+import com.edisonwang.ps.lib.QueuePressureStateChangedEvent;
 import com.edisonwang.ps.sample.ComplicatedAction_.PsSampleComplicatedAction;
 import com.edisonwang.ps.sample.SimpleAction_.PsSimpleAction;
 
@@ -46,6 +47,10 @@ public class SampleActivity extends Activity {
                     event.sampleParam3 + "\n" +
                     "Lucky Numbers were: " + Arrays.toString(event.sampleStringList.toArray()));
         }
+
+        public void onEventMainThread(QueuePressureStateChangedEvent event) {
+            onReceived("Got pressure changed event: " + event.state + " current size is " + event.size);
+        }
     };
 
     private EditText mUpdates;
@@ -61,7 +66,9 @@ public class SampleActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample);
-        PennStation.init(getApplication(), new PennStation.PennStationOptions(EventService.class));
+        PennStation.PennStationOptions options = new PennStation.PennStationOptions(EventService.class);
+        options.pendingWarningThreshold = 5;
+        PennStation.init(getApplication(), options);
         mUpdates = (EditText) findViewById(R.id.updates);
         mUpdates.setKeyListener(null);
     }

@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface EventProducer {
     /**
-     * Event classes that needs to be generated.
+     * @return Event classes that needs to be generated.
      */
     EventClass[] generated() default {};
 
