@@ -15,6 +15,7 @@ import android.os.Process;
 import android.util.Log;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -227,11 +228,31 @@ public class EventServiceImpl<T extends Service> {
         private final String mRequestId;
 
         private boolean mCanceled;
+        private final ResultDeliver mResultDeliver = new ResultDeliver() {
+            public void deliverResult(ActionResult result) {
+                if (result != null) {
+                    mBundle.putParcelable(EXTRA_SERVICE_RESULT, result);
+                }
 
+                final Runnable responderRunnable;
+                if (mResponder != null) {
+                    responderRunnable = new ResponderRunnable(mResponder, mBundle, mStartId);
+                } else if (mMessenger != null) {
+                    responderRunnable = new MessengerResponderRunnable(mMessenger, mBundle, mStartId);
+                } else {
+                    responderRunnable = null;
+                }
+
+                if (responderRunnable != null) {
+                    mMainHandler.post(responderRunnable);
+                }
+            }
+        };
         // Optionally either responder or messenger will be used to send response back to ui
         public ExecutionRunnable(int startId, Bundle bundle,
                                  SpiralServiceResponder responder, Messenger messenger) {
             mStartId = startId;
+            bundle.setClassLoader(ActionRequest.class.getClassLoader());
             mRequestId = bundle.getString(EXTRA_REQUEST_ID);
             mBundle = bundle;
             mResponder = responder;
@@ -245,26 +266,12 @@ public class EventServiceImpl<T extends Service> {
             }
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
-            ActionResult result = null;
             if (event != null) {
-                result = event.process(EventServiceImpl.this, mBundle);
-            }
-            if (result != null) {
-                mBundle.putParcelable(EXTRA_SERVICE_RESULT, result);
-            }
-
-            final Runnable responderRunnable;
-            if (mResponder != null) {
-                responderRunnable = new ResponderRunnable(mResponder, mBundle, mStartId);
-            } else if (mMessenger != null) {
-                responderRunnable = new MessengerResponderRunnable(mMessenger, mBundle, mStartId);
+                event.process(mResultDeliver, EventServiceImpl.this, mBundle, new ArrayList<ActionResult>());
             } else {
-                responderRunnable = null;
+                Log.w(TAG, "Nothing was done in " + mRequestId);
             }
-
-            if (responderRunnable != null) {
-                mMainHandler.post(responderRunnable);
-            }
+            //TODO
             if (mRequestId != null) {
                 synchronized (mTaskLock) {
                     Log.d(TAG, "Task " + mRequestId + " was completed.");

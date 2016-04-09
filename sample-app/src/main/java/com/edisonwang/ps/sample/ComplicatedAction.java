@@ -62,7 +62,7 @@ import java.util.Random;
 )
 @RequestActionHelper(baseClass = ActionRequestHelper.class, variables = {
         @ClassField(name = "sampleParam", kind = @Kind(clazz = String.class)),
-        @ClassField(name = "sampleParamTwo", kind =  @Kind(clazz = ComplicatedAction.SampleParcelable.class)),
+        @ClassField(name = "sampleParamTwo", kind =  @Kind(clazz = ComplicatedAction.SampleParcelable.class), required = true),
         @ClassField(name = "shouldFail", kind =  @Kind(clazz = boolean.class))
 }
 )

@@ -3,10 +3,12 @@ package com.edisonwang.ps.sample;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.edisonwang.ps.annotations.EventClass;
 import com.edisonwang.ps.annotations.EventProducer;
+import com.edisonwang.ps.annotations.Kind;
+import com.edisonwang.ps.annotations.ParcelableClassField;
 import com.edisonwang.ps.annotations.RequestAction;
 import com.edisonwang.ps.annotations.RequestActionHelper;
-import com.edisonwang.ps.annotations.EventClass;
 import com.edisonwang.ps.lib.Action;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionResult;
@@ -16,20 +18,20 @@ import com.edisonwang.ps.lib.EventServiceImpl;
  * @author edi
  */
 @EventProducer(generated = {
-        @EventClass
+        @EventClass(fields = {
+                @ParcelableClassField(name = "count", kind = @Kind(clazz = int.class), required = true)
+        })
 })
 @RequestAction
 @RequestActionHelper
-public class SimpleAction implements Action {
+public class CountAction implements Action {
+
+    private int mCount = 0;
 
     @Override
     public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest, Bundle bundle) {
-        try {
-            //Pretend this takes 3s to execute.
-            Thread.sleep(2 * 1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return new SimpleActionEvent();
+        Log.i("CountAction", "Processing request on " + mCount);
+        mCount++;
+        return new CountActionEvent(mCount);
     }
 }
