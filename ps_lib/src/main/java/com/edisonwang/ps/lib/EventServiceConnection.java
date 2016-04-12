@@ -26,6 +26,7 @@ class EventServiceConnection implements ServiceConnection {
     private final Context mContext;
     private final EventServiceImpl.EventServiceResponseHandler mResponseHandler;
     private final int mPendingWarningThreshold;
+    private final LimitedQueueInfo mDefaultQueueInfo;
     private Messenger mService;
     private Messenger mResponder;
     private boolean mPendingThresholdWarned;
@@ -36,9 +37,22 @@ class EventServiceConnection implements ServiceConnection {
         mContext = context;
         mResponseHandler = handler;
         mPendingWarningThreshold = options.pendingWarningThreshold;
+        mDefaultQueueInfo = options.defaultUseLimitedQueueInfo;
     }
 
     public String queueAndExecute(Bundle bundle) {
+        return queueAndExecute(bundle, mDefaultQueueInfo);
+    }
+
+    public String queueAndExecute(Bundle bundle, LimitedQueueInfo queueInfo) {
+        if (queueInfo != null) {
+            bundle.putBoolean(EventServiceImpl.EXTRA_REQUEST_QUEUE_NEW_THREAD, false);
+            bundle.putInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_PRIORITY, queueInfo.priority);
+            bundle.putString(EventServiceImpl.EXTRA_REQUEST_QUEUE_TAG, queueInfo.tag);
+            bundle.putInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_LIMIT, queueInfo.limit);
+        } else {
+            bundle.putBoolean(EventServiceImpl.EXTRA_REQUEST_QUEUE_NEW_THREAD, true);
+        }
         final String reqId = generateRequestId();
         bundle.putString(EXTRA_REQUEST_ID, reqId);
         bundle.putLong(EXTRA_REQUEST_TIME_MS, System.currentTimeMillis());

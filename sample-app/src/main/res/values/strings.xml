@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="send_actions">Send</string>
+    <string name="send_bunch_parallel">Send Bunch in Parallel</string>
+    <string name="send_counter">Send Two Counts In Dependency</string>
+    <string name="send_serial">Send Serial</string>
+    <string name="send_parallel">Send Parallel</string>
+    <string name="cancelCurrentRequests">Cancel Current Requests</string>
 </resources>

@@ -3,6 +3,10 @@ version = project.LIBRARY_VERSION
 
 apply plugin: 'java'
 
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
+
+
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'

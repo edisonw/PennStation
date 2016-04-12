@@ -57,13 +57,21 @@ public class EventManager {
     }
 
     public String requestAction(ActionRequest request) {
+        return mServiceConnection.queueAndExecute(createServiceBundle(request));
+    }
+
+    public String requestAction(ActionRequest request, LimitedQueueInfo queueInfo) {
+        return mServiceConnection.queueAndExecute(createServiceBundle(request), queueInfo);
+    }
+
+    private Bundle createServiceBundle(ActionRequest request) {
         Bundle bundle = new Bundle();
         bundle.putParcelable(EventServiceImpl.EXTRA_SERVICE_REQUEST, request);
         if (mLogRequestStacks) {
             bundle.putString(EventServiceImpl.EXTRA_STACKTRACE_STRING,
                     Log.getStackTraceString(new Exception()));
         }
-        return mServiceConnection.queueAndExecute(bundle);
+        return bundle;
     }
 
     private class EventServiceResponseHandler implements EventServiceImpl.EventServiceResponseHandler {

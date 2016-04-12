@@ -1,6 +1,7 @@
 package com.edisonwang.ps.lib;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Bundle;
@@ -15,11 +16,10 @@ import android.os.Process;
 import android.util.Log;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * @author edi
@@ -28,7 +28,11 @@ public class EventServiceImpl<T extends Service> {
 
     public static final String TAG = "EventService";
 
-    public static final String EXTRA_REQUEST_ID = "extra_request_id";
+    public static final String EXTRA_REQUEST_QUEUE_PRIORITY = "extra_request_priority";
+    public static final String EXTRA_REQUEST_QUEUE_LIMIT = "extra_request_queue_limit";
+    public static final String EXTRA_REQUEST_QUEUE_NEW_THREAD = "extra_request_queue_new_thread";
+    public static final String EXTRA_REQUEST_QUEUE_TAG = "extra_request_queue_tag";
+
     public static final String EXTRA_SERVICE_REQUEST = "extra_service_request";
     public static final String EXTRA_SERVICE_RESULT = "extra_service_result";
     public static final String EXTRA_CALLBACK = "extra_callback";
@@ -39,7 +43,7 @@ public class EventServiceImpl<T extends Service> {
 
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private final T mService;
-    private ExecutorService mExecutor;
+    private ActionExecutor mExecutor;
     private final int[] mTaskLock = new int[0];
     private final HashMap<String, ExecutionRunnable> mSubmittedTasks = new HashMap<>();
     private final Messenger mMessenger = new Messenger(new EventServiceHandler(new WeakReference<EventServiceImpl>(this)));
@@ -51,7 +55,7 @@ public class EventServiceImpl<T extends Service> {
     }
 
     void onCreate() {
-        mExecutor = Executors.newCachedThreadPool();
+        mExecutor = new ActionExecutor();
         mStartIds = new LinkedHashMap<>(50, 50);
     }
 
@@ -72,7 +76,7 @@ public class EventServiceImpl<T extends Service> {
         } else {
             responder = null;
         }
-        mExecutor.execute(new ExecutionRunnable(startId, bundle, responder, null));
+        performRequest(new ExecutionRunnable(startId, bundle, responder, null));
         mStartIds.put(startId, false);
         return Service.START_STICKY;
     }
@@ -98,7 +102,7 @@ public class EventServiceImpl<T extends Service> {
         mStartIds.clear();
     }
 
-    public T getService() {
+    public T getContext() {
         return mService;
     }
 
@@ -222,13 +226,35 @@ public class EventServiceImpl<T extends Service> {
         private final Messenger mMessenger;
         private final SpiralServiceResponder mResponder;
         private final String mRequestId;
-        private boolean mCanceled;
 
+        private boolean mCanceled;
+        private final ResultDeliver mResultDeliver = new ResultDeliver() {
+            public void deliverResult(ActionResult result) {
+                final Bundle bundle = new Bundle(mBundle);
+                if (result != null) {
+                    bundle.putParcelable(EXTRA_SERVICE_RESULT, result);
+                }
+
+                final Runnable responderRunnable;
+                if (mResponder != null) {
+                    responderRunnable = new ResponderRunnable(mResponder, bundle, mStartId);
+                } else if (mMessenger != null) {
+                    responderRunnable = new MessengerResponderRunnable(mMessenger, bundle, mStartId);
+                } else {
+                    responderRunnable = null;
+                }
+
+                if (responderRunnable != null) {
+                    mMainHandler.post(responderRunnable);
+                }
+            }
+        };
         // Optionally either responder or messenger will be used to send response back to ui
         public ExecutionRunnable(int startId, Bundle bundle,
                                  SpiralServiceResponder responder, Messenger messenger) {
             mStartId = startId;
-            mRequestId = bundle.getString(EXTRA_REQUEST_ID);
+            bundle.setClassLoader(ActionRequest.class.getClassLoader());
+            mRequestId = bundle.getString(EventServiceConnection.EXTRA_REQUEST_ID);
             mBundle = bundle;
             mResponder = responder;
             mMessenger = messenger;
@@ -241,26 +267,12 @@ public class EventServiceImpl<T extends Service> {
             }
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
-            ActionResult result = null;
             if (event != null) {
-                result = event.process(EventServiceImpl.this, mBundle);
-            }
-            if (result != null) {
-                mBundle.putParcelable(EXTRA_SERVICE_RESULT, result);
-            }
-
-            final Runnable responderRunnable;
-            if (mResponder != null) {
-                responderRunnable = new ResponderRunnable(mResponder, mBundle, mStartId);
-            } else if (mMessenger != null) {
-                responderRunnable = new MessengerResponderRunnable(mMessenger, mBundle, mStartId);
+                event.process(mResultDeliver, EventServiceImpl.this, mBundle, new ArrayList<ActionResult>());
             } else {
-                responderRunnable = null;
+                Log.w(TAG, "Nothing was done in " + mRequestId);
             }
-
-            if (responderRunnable != null) {
-                mMainHandler.post(responderRunnable);
-            }
+            //TODO
             if (mRequestId != null) {
                 synchronized (mTaskLock) {
                     Log.d(TAG, "Task " + mRequestId + " was completed.");
@@ -278,29 +290,45 @@ public class EventServiceImpl<T extends Service> {
         public void setCanceled(boolean canceled) {
             mCanceled = canceled;
         }
+
+        public Bundle getBundle() {
+            return mBundle;
+        }
     }
 
     private void cancelRequest(Message msg) {
         Bundle data = msg.getData();
-        String reqId = data.getString(EXTRA_REQUEST_ID);
+        String reqId = data.getString(EventServiceConnection.EXTRA_REQUEST_ID);
         synchronized (mTaskLock) {
             ExecutionRunnable runningTask = mSubmittedTasks.remove(reqId);
             if (runningTask != null) {
+                Log.i(TAG, "Request cancelled." + reqId);
                 runningTask.setCanceled(true);
             }
         }
     }
 
     private void performRequest(Message msg) {
-        final Bundle data = msg.getData();
+        performRequest(new ExecutionRunnable(0, msg.getData(), null, msg.replyTo));
+    }
+
+    private void performRequest(ExecutionRunnable task) {
+        final Bundle data = task.getBundle();
         data.setClassLoader(mService.getClassLoader());
-        ExecutionRunnable task = new ExecutionRunnable(0, data, null, msg.replyTo);
         if (task.mRequestId != null) {
             synchronized (mTaskLock) {
                 mSubmittedTasks.put(task.mRequestId, task);
             }
         }
-        mExecutor.execute(task);
+        if (data.getBoolean(EventServiceImpl.EXTRA_REQUEST_QUEUE_NEW_THREAD, true)) {
+            mExecutor.executeOnNewThread(task);
+        } else {
+            final int queueLimit = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_LIMIT, 2);
+            final String tag = data.getString(EventServiceImpl.EXTRA_REQUEST_QUEUE_TAG);
+            final String queueTag = tag != null ? tag : ActionExecutor.DEFAULT;
+            final int queuePriority = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_PRIORITY, 0);
+            mExecutor.execute(task, queueLimit, queueTag, queuePriority);
+        }
     }
 
     private static class EventServiceHandler extends Handler {

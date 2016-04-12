@@ -14,8 +14,24 @@ public class PennStation {
     }
 
     public static class PennStationOptions {
+        /**
+         * The event service class that actions will be running on.
+         */
         public final Class<? extends EventService> eventServiceClass;
+
+        /**
+         * If null, events will always run on new threads, if set, it will be used as default.
+         */
+        public LimitedQueueInfo defaultUseLimitedQueueInfo;
+
+        /**
+         * If true, requests stacks will be logged, and have a slight performance reduction.
+         */
         public boolean logRequestStacks;
+
+        /**
+         * If true, if there are too many requests pending in the global queue, logs will be emitted.
+         */
         public int pendingWarningThreshold;
 
         public PennStationOptions(Class<? extends EventService> eventServiceClass) {
@@ -65,11 +81,19 @@ public class PennStation {
     }
 
     public static String requestAction(ActionRequestHelper request) {
-        return getManager().requestAction(request.buildRequest());
+        return requestAction(request, null);
+    }
+
+    public static String requestAction(ActionRequestHelper request, LimitedQueueInfo queueInfo) {
+        return getManager().requestAction(request.buildRequest(), queueInfo);
+    }
+
+    public static String requestAction(ActionRequest request, LimitedQueueInfo queueInfo) {
+        return getManager().requestAction(request, queueInfo);
     }
 
     public static String requestAction(ActionRequest request) {
-        return getManager().requestAction(request);
+        return requestAction(request, null);
     }
 
     /**

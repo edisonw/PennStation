@@ -9,6 +9,9 @@ apply plugin: 'com.jfrog.bintray'
 def siteUrl = 'https://github.com/edisonw/PennStation'
 def gitUrl = 'https://github.com/edisonw/PennStation.git'
 
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
+
 bintray {
     user = 'edisonw'
     key = project.BINTRAY_KEY

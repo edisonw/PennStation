@@ -1,7 +1,7 @@
 package com.edisonwang.ps.sample;
 
 import android.annotation.SuppressLint;
-import android.os.Bundle;
+import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
@@ -18,7 +18,7 @@ import com.edisonwang.ps.lib.ActionKey;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestHelper;
 import com.edisonwang.ps.lib.ActionResult;
-import com.edisonwang.ps.lib.EventServiceImpl;
+import com.edisonwang.ps.lib.RequestEnv;
 import com.edisonwang.ps.lib.parcelers.ParcelableParceler;
 
 import java.util.ArrayList;
@@ -62,7 +62,7 @@ import java.util.Random;
 )
 @RequestActionHelper(baseClass = ActionRequestHelper.class, variables = {
         @ClassField(name = "sampleParam", kind = @Kind(clazz = String.class)),
-        @ClassField(name = "sampleParamTwo", kind =  @Kind(clazz = ComplicatedAction.SampleParcelable.class)),
+        @ClassField(name = "sampleParamTwo", kind =  @Kind(clazz = ComplicatedAction.SampleParcelable.class), required = true),
         @ClassField(name = "shouldFail", kind =  @Kind(clazz = boolean.class))
 }
 )
@@ -73,14 +73,15 @@ public class ComplicatedAction implements Action {
     private static final Random sRandom = new Random();
 
     @Override
-    public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest, Bundle bundle) {
-        ComplicatedActionHelper helper = new ComplicatedActionHelper(actionRequest.getArguments(getCurrentClassLoader()));
+    public ActionResult processRequest(Context context, ActionRequest request, RequestEnv env) {
+        ComplicatedActionHelper helper = new ComplicatedActionHelper(request.getArguments(this));
         Log.i(TAG, "Processing requestAction " + helper.sampleParamTwo().mTestName);
+        final ActionResult result;
         if (helper.shouldFail()) {
-            return new SampleActionFailedEvent(helper.sampleParam(), helper.sampleParamTwo());
+            result = new SampleActionFailedEvent(helper.sampleParam(), helper.sampleParamTwo());
         } else {
             if (sRandom.nextInt() % 2 == 0) {
-                return new SampleActionSuccessEvent(helper.sampleParam(), helper.sampleParamTwo());
+                result = new SampleActionSuccessEvent(helper.sampleParam(), helper.sampleParamTwo());
             } else {
                 ComplicatedActionEventSample event = new ComplicatedActionEventSample("sampleParam3", 0);
                 ArrayList<String> someRandomList = new ArrayList<>();
@@ -88,17 +89,11 @@ public class ComplicatedAction implements Action {
                     someRandomList.add(String.valueOf(sRandom.nextInt(59) + 1));
                 }
                 event.sampleStringList = someRandomList;
-                return event;
+                result = event;
             }
         }
-    }
-
-    /**
-     * @return the class loader associated with the current module,
-     * you may want to use a different class loader.
-     */
-    private ClassLoader getCurrentClassLoader() {
-        return getClass().getClassLoader();
+        Log.i(TAG, "Processed " + helper.sampleParamTwo().mTestName + " " + result);
+        return result;
     }
 
     @SuppressLint("ParcelCreator")
