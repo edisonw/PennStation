@@ -1,7 +1,6 @@
 package com.edisonwang.ps.sample;
 
-import android.os.Bundle;
-import android.util.Log;
+import android.content.Context;
 
 import com.edisonwang.ps.annotations.EventProducer;
 import com.edisonwang.ps.annotations.RequestAction;
@@ -10,7 +9,7 @@ import com.edisonwang.ps.annotations.EventClass;
 import com.edisonwang.ps.lib.Action;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionResult;
-import com.edisonwang.ps.lib.EventServiceImpl;
+import com.edisonwang.ps.lib.RequestEnv;
 
 /**
  * @author edi
@@ -23,7 +22,7 @@ import com.edisonwang.ps.lib.EventServiceImpl;
 public class SimpleAction implements Action {
 
     @Override
-    public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest, Bundle bundle) {
+    public ActionResult processRequest(Context context, ActionRequest request, RequestEnv env) {
         try {
             //Pretend this takes 3s to execute.
             Thread.sleep(2 * 1000);

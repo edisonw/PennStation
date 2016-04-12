@@ -1,7 +1,7 @@
 package com.edisonwang.ps.sample;
 
 import android.annotation.SuppressLint;
-import android.os.Bundle;
+import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
@@ -18,7 +18,7 @@ import com.edisonwang.ps.lib.ActionKey;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestHelper;
 import com.edisonwang.ps.lib.ActionResult;
-import com.edisonwang.ps.lib.EventServiceImpl;
+import com.edisonwang.ps.lib.RequestEnv;
 import com.edisonwang.ps.lib.parcelers.ParcelableParceler;
 
 import java.util.ArrayList;
@@ -73,8 +73,8 @@ public class ComplicatedAction implements Action {
     private static final Random sRandom = new Random();
 
     @Override
-    public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest, Bundle bundle) {
-        ComplicatedActionHelper helper = new ComplicatedActionHelper(actionRequest.getArguments(getCurrentClassLoader()));
+    public ActionResult processRequest(Context context, ActionRequest request, RequestEnv env) {
+        ComplicatedActionHelper helper = new ComplicatedActionHelper(request.getArguments(this));
         Log.i(TAG, "Processing requestAction " + helper.sampleParamTwo().mTestName);
         if (helper.shouldFail()) {
             return new SampleActionFailedEvent(helper.sampleParam(), helper.sampleParamTwo());
@@ -91,14 +91,6 @@ public class ComplicatedAction implements Action {
                 return event;
             }
         }
-    }
-
-    /**
-     * @return the class loader associated with the current module,
-     * you may want to use a different class loader.
-     */
-    private ClassLoader getCurrentClassLoader() {
-        return getClass().getClassLoader();
     }
 
     @SuppressLint("ParcelCreator")

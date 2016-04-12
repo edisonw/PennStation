@@ -1,6 +1,7 @@
 package com.edisonwang.ps.lib;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Bundle;
@@ -102,7 +103,7 @@ public class EventServiceImpl<T extends Service> {
         mStartIds.clear();
     }
 
-    public T getService() {
+    public T getContext() {
         return mService;
     }
 

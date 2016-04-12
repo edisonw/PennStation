@@ -1,6 +1,6 @@
 package com.edisonwang.ps.sample;
 
-import android.os.Bundle;
+import android.content.Context;
 import android.util.Log;
 
 import com.edisonwang.ps.annotations.EventClass;
@@ -12,7 +12,7 @@ import com.edisonwang.ps.annotations.RequestActionHelper;
 import com.edisonwang.ps.lib.Action;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionResult;
-import com.edisonwang.ps.lib.EventServiceImpl;
+import com.edisonwang.ps.lib.RequestEnv;
 
 /**
  * @author edi
@@ -29,7 +29,7 @@ public class CountAction implements Action {
     private int mCount = 0;
 
     @Override
-    public ActionResult processRequest(EventServiceImpl service, ActionRequest actionRequest, Bundle bundle) {
+    public ActionResult processRequest(Context context, ActionRequest request, RequestEnv env) {
         Log.i("CountAction", "Processing request on " + mCount);
         mCount++;
         return new CountActionEvent(mCount);

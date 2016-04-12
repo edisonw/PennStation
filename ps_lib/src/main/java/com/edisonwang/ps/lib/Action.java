@@ -1,13 +1,12 @@
 package com.edisonwang.ps.lib;
 
-import android.app.Service;
-import android.os.Bundle;
+import android.content.Context;
 
 /**
  * @author edi
  */
-public interface Action<T extends Service> {
+public interface Action {
 
-    ActionResult processRequest(EventServiceImpl<T> service, ActionRequest actionRequest, Bundle bundle);
+    ActionResult processRequest(Context context, ActionRequest request, RequestEnv env);
 
 }

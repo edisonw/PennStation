@@ -3,7 +3,6 @@ package com.edisonwang.ps.lib;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.util.Log;
 
 import java.util.ArrayList;
 
@@ -68,6 +67,10 @@ public class ActionRequest implements Parcelable {
         return mArgs;
     }
 
+    public Bundle getArguments(Action action) {
+        return getArguments(action.getClass().getClassLoader());
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -99,8 +102,8 @@ public class ActionRequest implements Parcelable {
         for (ActionRequest actionRequest : mDependencies) {
             results.addAll(actionRequest.process(resultDeliver, service, bundle, results));
         }
-        final Action<?> action = mActionKey.value();
-        final ActionResult result = action.processRequest(service, this, bundle);
+        final Action action = mActionKey.value();
+        final ActionResult result = action.processRequest(service.getContext(), this, new ActionRequestEnv(bundle));
         resultDeliver.deliverResult(result);
         results.add(result);
         for (ActionRequest actionRequest : mNext) {
