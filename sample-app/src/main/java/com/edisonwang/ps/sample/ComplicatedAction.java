@@ -6,20 +6,20 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
 
-import com.edisonwang.ps.annotations.ClassField;
+import com.edisonwang.ps.annotations.Field;
+import com.edisonwang.ps.annotations.Event;
 import com.edisonwang.ps.annotations.EventProducer;
 import com.edisonwang.ps.annotations.Kind;
-import com.edisonwang.ps.annotations.ParcelableClassField;
-import com.edisonwang.ps.annotations.RequestAction;
-import com.edisonwang.ps.annotations.RequestActionHelper;
-import com.edisonwang.ps.annotations.EventClass;
-import com.edisonwang.ps.lib.Action;
+import com.edisonwang.ps.annotations.ParcelableField;
+import com.edisonwang.ps.annotations.Action;
+import com.edisonwang.ps.annotations.ActionHelper;
 import com.edisonwang.ps.lib.ActionKey;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestHelper;
 import com.edisonwang.ps.lib.ActionResult;
 import com.edisonwang.ps.lib.RequestEnv;
 import com.edisonwang.ps.lib.parcelers.ParcelableParceler;
+import com.edisonwang.ps.sample.events.ComplicatedActionSample;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,44 +29,44 @@ import java.util.Random;
  * @author edi
  */
 @EventProducer(events = {
-        ComplicatedAction.SampleActionSuccessEvent.class,
-        ComplicatedAction.SampleActionFailedEvent.class
+        ComplicatedAction.SampleActionSuccess.class,
+        ComplicatedAction.SampleActionFailed.class
 }, generated = {
-        @EventClass(classPostFix = "Sample", baseClass = ActionResult.class,
+        @Event(postFix = "Sample", base = ActionResult.class,
                 fields = {
-                        @ParcelableClassField(
+                        @ParcelableField(
                                 name = "sampleParam3",
                                 kind = @Kind(clazz = String.class),
                                 parceler = SampleStringParceler.class),
-                        @ParcelableClassField(
+                        @ParcelableField(
                                 name = "sampleParcelable",
                                 kind = @Kind(clazz = ComplicatedAction.SampleParcelable.class),
                                 parceler = ParcelableParceler.class,
                                 required = false
                         ),
-                        @ParcelableClassField(
+                        @ParcelableField(
                                 name = "defaultParcelable",
                                 kind = @Kind(clazz = double.class)
                         ),
-                        @ParcelableClassField(
+                        @ParcelableField(
                                 name = "sampleStringList",
                                 kind = @Kind(clazz = List.class, parameter = String.class),
                                 required = false
                         ),
                 }),
 })
-@RequestAction(
-        baseClass = ActionKey.class,
-        valueType = Action.class,
+@Action(
+        base = ActionKey.class,
+        valueType = com.edisonwang.ps.lib.Action.class,
         group = "Sample"
 )
-@RequestActionHelper(baseClass = ActionRequestHelper.class, variables = {
-        @ClassField(name = "sampleParam", kind = @Kind(clazz = String.class)),
-        @ClassField(name = "sampleParamTwo", kind =  @Kind(clazz = ComplicatedAction.SampleParcelable.class), required = true),
-        @ClassField(name = "shouldFail", kind =  @Kind(clazz = boolean.class))
+@ActionHelper(base = ActionRequestHelper.class, args = {
+        @Field(name = "sampleParam", kind = @Kind(clazz = String.class)),
+        @Field(name = "sampleParamTwo", kind =  @Kind(clazz = ComplicatedAction.SampleParcelable.class), required = true),
+        @Field(name = "shouldFail", kind =  @Kind(clazz = boolean.class))
 }
 )
-public class ComplicatedAction implements Action {
+public class ComplicatedAction implements com.edisonwang.ps.lib.Action {
 
     private static final String TAG = "ComplicatedAction";
 
@@ -78,12 +78,12 @@ public class ComplicatedAction implements Action {
         Log.i(TAG, "Processing requestAction " + helper.sampleParamTwo().mTestName);
         final ActionResult result;
         if (helper.shouldFail()) {
-            result = new SampleActionFailedEvent(helper.sampleParam(), helper.sampleParamTwo());
+            result = new SampleActionFailed(helper.sampleParam(), helper.sampleParamTwo());
         } else {
             if (sRandom.nextInt() % 2 == 0) {
-                result = new SampleActionSuccessEvent(helper.sampleParam(), helper.sampleParamTwo());
+                result = new SampleActionSuccess(helper.sampleParam(), helper.sampleParamTwo());
             } else {
-                ComplicatedActionEventSample event = new ComplicatedActionEventSample("sampleParam3", 0);
+                ComplicatedActionSample event = new ComplicatedActionSample("sampleParam3", 0);
                 ArrayList<String> someRandomList = new ArrayList<>();
                 for (int i = 0; i < 5; i++) {
                     someRandomList.add(String.valueOf(sRandom.nextInt(59) + 1));
@@ -126,24 +126,24 @@ public class ComplicatedAction implements Action {
         }
     }
 
-    public static class SampleActionSuccessEvent extends SampleActionEvent {
+    public static class SampleActionSuccess extends SampleActionEvent {
 
-        public static final Parcelable.Creator<SampleActionSuccessEvent> CREATOR
-                = new Parcelable.Creator<SampleActionSuccessEvent>() {
-            public SampleActionSuccessEvent createFromParcel(Parcel in) {
-                return new SampleActionSuccessEvent(in);
+        public static final Parcelable.Creator<SampleActionSuccess> CREATOR
+                = new Parcelable.Creator<SampleActionSuccess>() {
+            public SampleActionSuccess createFromParcel(Parcel in) {
+                return new SampleActionSuccess(in);
             }
 
-            public SampleActionSuccessEvent[] newArray(int size) {
-                return new SampleActionSuccessEvent[size];
+            public SampleActionSuccess[] newArray(int size) {
+                return new SampleActionSuccess[size];
             }
         };
 
-        public SampleActionSuccessEvent(String s, SampleParcelable parcelable) {
+        public SampleActionSuccess(String s, SampleParcelable parcelable) {
             super(s, parcelable);
         }
 
-        public SampleActionSuccessEvent(Parcel in) {
+        public SampleActionSuccess(Parcel in) {
             super(in);
         }
 
@@ -153,24 +153,24 @@ public class ComplicatedAction implements Action {
         }
     }
 
-    public static class SampleActionFailedEvent extends SampleActionEvent {
+    public static class SampleActionFailed extends SampleActionEvent {
 
-        public static final Parcelable.Creator<SampleActionFailedEvent> CREATOR
-                = new Parcelable.Creator<SampleActionFailedEvent>() {
-            public SampleActionFailedEvent createFromParcel(Parcel in) {
-                return new SampleActionFailedEvent(in);
+        public static final Parcelable.Creator<SampleActionFailed> CREATOR
+                = new Parcelable.Creator<SampleActionFailed>() {
+            public SampleActionFailed createFromParcel(Parcel in) {
+                return new SampleActionFailed(in);
             }
 
-            public SampleActionFailedEvent[] newArray(int size) {
-                return new SampleActionFailedEvent[size];
+            public SampleActionFailed[] newArray(int size) {
+                return new SampleActionFailed[size];
             }
         };
 
-        public SampleActionFailedEvent(String s, SampleParcelable parcelable) {
+        public SampleActionFailed(String s, SampleParcelable parcelable) {
             super(s, parcelable);
         }
 
-        public SampleActionFailedEvent(Parcel in) {
+        public SampleActionFailed(Parcel in) {
             super(in);
         }
 

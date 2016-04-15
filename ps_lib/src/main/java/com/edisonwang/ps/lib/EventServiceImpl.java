@@ -268,7 +268,7 @@ public class EventServiceImpl<T extends Service> {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
             if (event != null) {
-                event.process(mResultDeliver, EventServiceImpl.this, mBundle, new ArrayList<ActionResult>());
+                event.process(mResultDeliver, EventServiceImpl.this, mBundle, new ActionResults());
             } else {
                 Log.w(TAG, "Nothing was done in " + mRequestId);
             }

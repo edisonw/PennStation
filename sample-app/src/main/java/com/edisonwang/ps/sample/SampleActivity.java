@@ -14,9 +14,14 @@ import com.edisonwang.ps.lib.EventService;
 import com.edisonwang.ps.lib.LimitedQueueInfo;
 import com.edisonwang.ps.lib.PennStation;
 import com.edisonwang.ps.lib.QueuePressureStateChangedEvent;
+import com.edisonwang.ps.sample.CachedAction_.PsCachedAction;
 import com.edisonwang.ps.sample.ComplicatedAction_.PsSampleComplicatedAction;
 import com.edisonwang.ps.sample.CountAction_.PsCountAction;
 import com.edisonwang.ps.sample.SimpleAction_.PsSimpleAction;
+import com.edisonwang.ps.sample.events.ComplicatedActionSample;
+import com.edisonwang.ps.sample.events.CountActionComplete;
+import com.edisonwang.ps.sample.events.CountActionEvent;
+import com.edisonwang.ps.sample.events.SimpleActionEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,18 +38,23 @@ public class SampleActivity extends Activity {
     private SampleActivityEventListener mListener = new SampleActivityEventListener() {
 
         @Override
+        public void onEventMainThread(CountActionComplete event) {
+            onReceived("Count complete!");
+        }
+
+        @Override
         public void onEventMainThread(SimpleActionEvent event) {
             onReceived("Got " + event.getClass().getSimpleName());
         }
 
         @Override
-        public void onEventMainThread(ComplicatedAction.SampleActionFailedEvent event) {
+        public void onEventMainThread(ComplicatedAction.SampleActionFailed event) {
             onReceived("Got " + event.getClass().getSimpleName() + " that was " +
                     event.mSampleParam + " " + event.mSampleParcelable.mTestName);
         }
 
         @Override
-        public void onEventMainThread(ComplicatedAction.SampleActionSuccessEvent event) {
+        public void onEventMainThread(ComplicatedAction.SampleActionSuccess event) {
             onReceived("Got " + event.getClass().getSimpleName() + " that was " +
                     event.mSampleParam + " " + event.mSampleParcelable.mTestName);
         }
@@ -55,7 +65,7 @@ public class SampleActivity extends Activity {
         }
 
         @Override
-        public void onEventMainThread(ComplicatedActionEventSample event) {
+        public void onEventMainThread(ComplicatedActionSample event) {
             onReceived("Got " + event.getClass().getSimpleName() + " that was " +
                     event.sampleParam3 + "\n" +
                     "Lucky Numbers were: " + Arrays.toString(event.sampleStringList.toArray()));
@@ -105,6 +115,12 @@ public class SampleActivity extends Activity {
         }
     }
 
+    private void requestAction(ActionRequest request, LimitedQueueInfo queue) {
+        synchronized (mRequestIds) {
+            mRequestIds.add(PennStation.requestAction(request, queue));
+        }
+    }
+
     private void requestAction(ActionRequestHelper helper, LimitedQueueInfo queue) {
         synchronized (mRequestIds) {
             mRequestIds.add(PennStation.requestAction(helper, queue));
@@ -150,6 +166,12 @@ public class SampleActivity extends Activity {
                 PennStation.cancelAction(id);
             }
         }
+    }
+
+    public void testCache(View button) {
+        LimitedQueueInfo queue = new LimitedQueueInfo(1, 1, "CacheActionQueue");
+        requestAction(PsCachedAction.helper(2).actionCacheAllowed(true), queue);
+        requestAction(PsCachedAction.helper(3).actionCacheAllowed(false), queue);
     }
 
     public void testEventRequest(View button) {

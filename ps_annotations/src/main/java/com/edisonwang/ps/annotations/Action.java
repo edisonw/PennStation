@@ -12,10 +12,12 @@ import java.lang.annotation.Target;
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.CLASS)
 @Inherited
-public @interface EventClass {
-    String classPostFix() default "";
+public @interface Action {
 
-    Class baseClass() default Default.class;
+    Class base() default Default.class; //Action.java
 
-    ParcelableClassField[] fields() default {};
+    Class valueType() default Default.class; //ActionKey.java
+
+    String group() default "";
+
 }

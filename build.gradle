@@ -1,6 +1,6 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 project.ext.ANDROID_BUILD_SDK_VERSION = "23"
-project.ext.ANDROID_BUILD_TOOLS_VERSION = "23.0.2"
+project.ext.ANDROID_BUILD_TOOLS_VERSION = "23.0.3"
 project.ext.ANDROID_BUILD_MIN_SDK_VERSION = "9"
 project.ext.ANDROID_BUILD_TARGET_SDK_VERSION = "23"
 project.ext.BINTRAY_KEY = System.getenv('BINTRAY_KEY')
@@ -11,7 +11,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.1.0-alpha5'
+        classpath 'com.android.tools.build:gradle:2.1.0-beta1'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:1.3'
 
