@@ -22,7 +22,7 @@ public class ActionRequest implements Parcelable {
         }
     };
 
-    private static final String TAG = "ActionRequest";
+    private boolean mActionCacheAllowed = false;
 
     private ActionKey mActionKey;
     private final ArrayList<ActionRequest> mDependencies = new ArrayList<>();
@@ -30,13 +30,15 @@ public class ActionRequest implements Parcelable {
 
     Bundle mArgs;
 
-    //Transient variables
-    private ArrayList<ActionResult> mResults;
+    //Transient args
+    private ActionResults mResults;
 
     public ActionRequest(ActionKey actionKey, Bundle args,
                          ArrayList<ActionRequestHelper> dependencies,
-                         ArrayList<ActionRequestHelper> chainedActions) {
+                         ArrayList<ActionRequestHelper> chainedActions,
+                         boolean cacheAllowed) {
         mActionKey = actionKey;
+        mActionCacheAllowed = cacheAllowed;
         mArgs = args;
         if (mArgs == null) {
             mArgs = new Bundle();
@@ -54,12 +56,21 @@ public class ActionRequest implements Parcelable {
         mArgs = new Bundle();
     }
 
+    public ActionRequest actionCacheAllowed(boolean cacheAllowed) {
+        mActionCacheAllowed = cacheAllowed;
+        return this;
+    }
+
+    public boolean actionCacheAllowed() {
+        return mActionCacheAllowed;
+    }
+
     public void addArgs(Bundle bundle) {
         mArgs.putAll(bundle);
     }
 
     public ArrayList<ActionResult> getCurrentRequestResults() {
-        return mResults;
+        return mResults.getResults();
     }
 
     public Bundle getArguments(ClassLoader loader) {
@@ -77,6 +88,7 @@ public class ActionRequest implements Parcelable {
     }
 
     protected ActionRequest(Parcel in) {
+        mActionCacheAllowed = in.readInt() == 1;
         mActionKey = (ActionKey) in.readSerializable();
         in.readList(mDependencies, getClassLoader());
         in.readList(mNext, getClassLoader());
@@ -88,30 +100,46 @@ public class ActionRequest implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(mActionCacheAllowed ? 1 : 0);
         dest.writeSerializable(mActionKey);
         dest.writeList(mDependencies);
         dest.writeList(mNext);
         dest.writeBundle(mArgs != null ? mArgs : new Bundle());
     }
 
-    public ArrayList<ActionResult> process(ResultDeliver resultDeliver,
+    public void process(ResultDeliver resultDeliver,
                                            EventServiceImpl service,
                                            Bundle bundle,
-                                           final ArrayList<ActionResult> results) {
+                                           final ActionResults results) {
         mResults = results;
         for (ActionRequest actionRequest : mDependencies) {
-            results.addAll(actionRequest.process(resultDeliver, service, bundle, results));
+            actionRequest.process(resultDeliver, service, bundle, results);
+            if (mResults.hasFailed()) {
+                onCompletion(resultDeliver, null);
+                return;
+            }
         }
         final Action action = mActionKey.value();
         final ActionResult result = action.processRequest(service.getContext(), this, new ActionRequestEnv(bundle));
         if (result != null) {
             resultDeliver.deliverResult(result);
             results.add(result);
+            if (mResults.hasFailed()) {
+                onCompletion(resultDeliver, result);
+                return;
+            }
         }
         for (ActionRequest actionRequest : mNext) {
-            results.addAll(actionRequest.process(resultDeliver, service, bundle, results));
+            actionRequest.process(resultDeliver, service, bundle, results);
         }
-        return results;
+        onCompletion(resultDeliver, result);
+    }
+
+    private void onCompletion(ResultDeliver resultDeliver, ActionResult result) {
+        final Action action = mActionKey.value();
+        if (action instanceof FullAction) {
+            ((FullAction) action).onRequestComplete(resultDeliver, result);
+        }
     }
 
     @Override

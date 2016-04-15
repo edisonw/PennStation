@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
  * @author edi
  */
 @Retention(value = RetentionPolicy.CLASS)
-public @interface ClassField {
+public @interface Field {
     String name();
 
     Kind kind();

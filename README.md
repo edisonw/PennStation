@@ -63,10 +63,9 @@ dependencies {
 For each action the service needs to perform: 
 
 * Write the actions you want the event service to take. ([Full SampleAction])
-* Tag it with @EventProducer with the events it will emit.
-* Tag it with @RequestAction so it will be registered.
-* Optional: Tag it with @RequestActionHelper so convenience factories will be created.
-* Optional: Tag it with @RequestActionHelperFactory so convenience methods will be added.
+* Tag it with @EventProducer with the @Event(s) that it will emit.
+* Tag it with @Action so it will be registered.
+* E.g: Tag it with @ActionHelper so convenience factories will be created.
 
 For class that owns [event listeners]:
 

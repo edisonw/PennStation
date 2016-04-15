@@ -1,6 +1,7 @@
 package com.edisonwang.ps.annotations;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -8,14 +9,11 @@ import java.lang.annotation.Target;
 /**
  * @author edi
  */
-@Target(value = ElementType.ANNOTATION_TYPE)
+@Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.CLASS)
-public @interface ParcelableClassField {
-    String name();
+@Inherited
+public @interface ActionHelper {
+    Class base() default Default.class;
 
-    Kind kind();
-
-    Class parceler() default Default.class;
-
-    boolean required() default true;
+    Field[] args() default {};
 }

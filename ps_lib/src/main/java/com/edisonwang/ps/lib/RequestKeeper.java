@@ -17,7 +17,14 @@ public class RequestKeeper {
      * Make a request via PennStation and keep track of the requestId.
      */
     public void addRequest(ActionRequest request) {
-        String requestId = PennStation.requestAction(request);
+        addRequest(request, null);
+    }
+
+    /**
+     * Make a request via PennStation and keep track of the requestId.
+     */
+    public void addRequest(ActionRequest request, LimitedQueueInfo queueInfo) {
+        String requestId = PennStation.requestAction(request, queueInfo);
         synchronized (this) {
             mLastRequestIdByType.put(request.type(), requestId);
             mRequestIds.add(requestId);
@@ -42,9 +49,9 @@ public class RequestKeeper {
      * Cancel the last request of this type made by this keeper and then add it to the queue.
      * @param request request to replace or add the current with.
      */
-    public void addRequestAsReplacement(ActionRequest request) {
+    public void addRequestAsReplacement(ActionRequest request, LimitedQueueInfo queueInfo) {
         cancelPrevious(request.type());
-        addRequest(request);
+        addRequest(request, queueInfo);
     }
 
     /**

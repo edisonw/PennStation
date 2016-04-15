@@ -12,8 +12,12 @@ import java.lang.annotation.Target;
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.CLASS)
 @Inherited
-public @interface RequestActionHelper {
-    Class baseClass() default Default.class;
+public @interface Event {
+    String postFix() default "";
 
-    ClassField[] variables() default {};
+    Class base() default Default.class;
+
+    ParcelableField[] fields() default {};
+
+    boolean success() default true;
 }

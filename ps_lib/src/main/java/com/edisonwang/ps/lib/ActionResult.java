@@ -48,4 +48,8 @@ public abstract class ActionResult implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeByte((byte) (mPostSticky ? 1 : 0));
     }
+
+    public boolean isSuccess() {
+        return true;
+    }
 }

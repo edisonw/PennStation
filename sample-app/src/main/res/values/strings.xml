@@ -5,4 +5,5 @@
     <string name="send_serial">Send Serial</string>
     <string name="send_parallel">Send Parallel</string>
     <string name="cancelCurrentRequests">Cancel Current Requests</string>
+    <string name="send_with_cache">Send with Cache Enabled</string>
 </resources>
