@@ -46,8 +46,8 @@ repositories {
     jcenter()
 }
 dependencies {
-    apt 'com.edisonwang.ps:ps_processors:1.2'
-    compile 'com.edisonwang.ps:ps_lib:1.2'
+    apt 'com.edisonwang.ps:ps_processors:1.3'
+    compile 'com.edisonwang.ps:ps_lib:1.3'
 }
 ```
 
