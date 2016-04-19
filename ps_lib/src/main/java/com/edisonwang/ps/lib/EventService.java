@@ -2,6 +2,7 @@ package com.edisonwang.ps.lib;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.IBinder;
 
 /**
@@ -13,11 +14,16 @@ import android.os.IBinder;
  */
 public class EventService extends Service {
 
-    private EventServiceImpl<EventService> mImpl = new EventServiceImpl<>(this);
+    private EventServiceImpl mImpl = createImpl();
+    private ActionCacheFactory mActionCacheFactory = new LruMemCacheFactory();
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         return mImpl.onStartCommand(intent, flags, startId);
+    }
+
+    protected EventServiceImpl createImpl() {
+        return new EventServiceImpl<>(this);
     }
 
     @Override
@@ -29,5 +35,9 @@ public class EventService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return mImpl.onBind(intent);
+    }
+
+    public ActionCacheFactory getActionCacheFactory() {
+        return mActionCacheFactory;
     }
 }

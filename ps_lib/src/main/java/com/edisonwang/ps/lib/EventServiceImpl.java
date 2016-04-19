@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * @author edi
  */
-public class EventServiceImpl<T extends Service> {
+public class EventServiceImpl<T extends EventService> {
 
     public static final String TAG = "EventService";
 
@@ -268,7 +268,7 @@ public class EventServiceImpl<T extends Service> {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
             if (event != null) {
-                event.process(mResultDeliver, EventServiceImpl.this, mBundle, new ActionResults());
+                event.process(mResultDeliver, EventServiceImpl.this, new ActionRequestEnv(mBundle, mService.getActionCacheFactory()), new ActionResults());
             } else {
                 Log.w(TAG, "Nothing was done in " + mRequestId);
             }

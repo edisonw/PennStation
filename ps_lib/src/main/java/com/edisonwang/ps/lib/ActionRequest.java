@@ -108,19 +108,19 @@ public class ActionRequest implements Parcelable {
     }
 
     public void process(ResultDeliver resultDeliver,
-                                           EventServiceImpl service,
-                                           Bundle bundle,
-                                           final ActionResults results) {
+                        EventServiceImpl service,
+                        ActionRequestEnv env,
+                        final ActionResults results) {
         mResults = results;
         for (ActionRequest actionRequest : mDependencies) {
-            actionRequest.process(resultDeliver, service, bundle, results);
+            actionRequest.process(resultDeliver, service, env, results);
             if (mResults.hasFailed()) {
                 onCompletion(resultDeliver, null);
                 return;
             }
         }
         final Action action = mActionKey.value();
-        final ActionResult result = action.processRequest(service.getContext(), this, new ActionRequestEnv(bundle));
+        final ActionResult result = action.processRequest(service.getContext(), this, env);
         if (result != null) {
             resultDeliver.deliverResult(result);
             results.add(result);
@@ -130,7 +130,7 @@ public class ActionRequest implements Parcelable {
             }
         }
         for (ActionRequest actionRequest : mNext) {
-            actionRequest.process(resultDeliver, service, bundle, results);
+            actionRequest.process(resultDeliver, service, env, results);
         }
         onCompletion(resultDeliver, result);
     }
