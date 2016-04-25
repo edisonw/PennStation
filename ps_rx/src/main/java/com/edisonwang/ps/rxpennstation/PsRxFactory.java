@@ -14,6 +14,9 @@ import rx.Observable;
 import rx.Subscriber;
 
 /**
+ * Right now there's no point to make this public
+ * But when Annotation Support arrives for Jack and Jill.
+ *
  * @author edi
  */
 public class PsRxFactory<T extends ActionResult> {
@@ -33,28 +36,6 @@ public class PsRxFactory<T extends ActionResult> {
     public Observable<T> from(final ActionRequestHelper helper) {
         return from(helper.buildRequest());
     }
-
-    /**
-     * Right now there's no point to make this public
-     * But when Annotation Support arrives for Jack and Jill:
-     * <p/>
-     * Observable
-     * .interval(1000, TimeUnit.MILLISECONDS)
-     * .take(6)
-     * .flatMap((Func1<? super Long, ? extends Observable<?>>) aLong -> PsRxFactory.from(PsSimpleAction.helper(), SimpleActionEvent.class))
-     * .subscribe(event -> Log.i("PennStationTest", event.toString()));
-     * <p/>
-     * Also annotation generators will be included so that type is not needed.
-     * <p/>
-     * Observable.interval(1000, TimeUnit.MILLISECONDS).take(6).flatMap(new Func1<Long, Observable<SimpleActionEvent>>() {
-     *
-     * @Override public Observable<SimpleActionEvent> call(Long aLong) {
-     * return new PsRxFactory.from(SimpleActionEvent.class).from(PsSimpleAction.helper());
-     * }
-     * }).subscribe(new Subscriber<SimpleActionEvent>() {
-     * //DO something.
-     * });
-     */
     public Observable<T> from(final ActionRequest request) {
         return Observable.create(
                 new Observable.OnSubscribe<T>() {

@@ -1,5 +1,7 @@
-apply plugin: 'com.android.library'
+group = 'com.edisonwang.ps'
+version = project.LIBRARY_VERSION
 
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion Integer.parseInt(project.ANDROID_BUILD_SDK_VERSION)
@@ -29,8 +31,84 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
     compile project(':ps_lib')
     compile 'io.reactivex:rxandroid:1.1.0'
     compile 'io.reactivex:rxjava:1.1.3'
+}
+
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+def siteUrl = 'https://github.com/edisonw/PennStation'
+def gitUrl = 'https://github.com/edisonw/PennStation.git'
+
+bintray {
+    user = 'edisonw'
+    key = project.BINTRAY_KEY
+
+    configurations = ['archives'] //When uploading configuration files
+    pkg {
+        repo = 'android'
+        name = 'PennStation'
+        desc = 'Penn Station, EventBus on steroids.'
+        websiteUrl = siteUrl
+        issueTrackerUrl = 'https://github.com/edisonw/PennStation/issues'
+        vcsUrl = gitUrl
+        licenses = ['Apache-2.0']
+        labels = ['aar', 'android', 'example']
+        publicDownloadNumbers = true
+    }
+}
+install {
+    repositories.mavenInstaller {
+        pom {
+            project {
+                packaging 'aar'
+                name 'PennStation'
+                url siteUrl
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'edisonw'
+                        name 'Edison Wang'
+                        email 'edisonRemoveThis@molabs.com'
+                    }
+                }
+                scm {
+                    connection 'https://github.com/edisonw/PennStation'
+                    developerConnection 'https://github.com/edisonw/PennStation.git'
+                    url siteUrl
+
+                }
+            }
+        }
+    }
+}
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+task findConventions << {
+    println project.getConvention()
 }
