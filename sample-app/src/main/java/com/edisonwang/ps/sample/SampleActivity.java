@@ -10,12 +10,10 @@ import android.widget.EditText;
 import com.edisonwang.ps.annotations.EventListener;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestHelper;
-import com.edisonwang.ps.lib.ActionResult;
 import com.edisonwang.ps.lib.EventService;
 import com.edisonwang.ps.lib.LimitedQueueInfo;
 import com.edisonwang.ps.lib.PennStation;
 import com.edisonwang.ps.lib.QueuePressureStateChangedEvent;
-import com.edisonwang.ps.rxpennstation.PsRxFactory;
 import com.edisonwang.ps.sample.CachedAction_.PsCachedAction;
 import com.edisonwang.ps.sample.ComplicatedAction_.PsSampleComplicatedAction;
 import com.edisonwang.ps.sample.CountAction_.PsCountAction;
@@ -27,11 +25,6 @@ import com.edisonwang.ps.sample.events.SimpleActionEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
-import rx.Observable;
-import rx.Subscriber;
-import rx.functions.Func1;
 
 @EventListener(producers = {
         ComplicatedAction.class,
@@ -169,7 +162,7 @@ public class SampleActivity extends Activity {
 
     public void testCancelCurrent(View button) {
         synchronized (mRequestIds) {
-            for (String id: mRequestIds) {
+            for (String id : mRequestIds) {
                 PennStation.cancelAction(id);
             }
         }
