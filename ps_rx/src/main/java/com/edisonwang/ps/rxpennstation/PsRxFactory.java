@@ -36,6 +36,7 @@ public class PsRxFactory<T extends ActionResult> {
     public Observable<T> from(final ActionRequestHelper helper) {
         return from(helper.buildRequest());
     }
+
     public Observable<T> from(final ActionRequest request) {
         return Observable.create(
                 new Observable.OnSubscribe<T>() {

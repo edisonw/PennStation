@@ -402,6 +402,19 @@ public class PennStationProcessor extends AbstractProcessor {
             }
             writeClass(packageName, listenerClassName, typeBuilder.build(), filer);
         }
+        Set<String> allProducers = producerEvents.keySet();
+        for (String producer: allProducers) {
+            String packageName = packageFromQualifiedName(producer);
+            String listenerClassName = producer.substring(producer.lastIndexOf(".") + 1) + "Listener";
+            HashSet<String> events = getEventsFromProducer(producerEvents, elementUtils.getTypeElement(producer));
+            if (events != null) {
+                TypeSpec.Builder typeBuilder = TypeSpec.interfaceBuilder(listenerClassName).addModifiers(Modifier.PUBLIC);
+                for (String event : events) {
+                    typeBuilder.addMethod(MethodSpec.methodBuilder("onEvent").addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT).addParameter(guessTypeName(event), "event").build());
+                }
+                writeClass(packageName, listenerClassName, typeBuilder.build(), filer);
+            }
+        }
 
         return false;
     }
