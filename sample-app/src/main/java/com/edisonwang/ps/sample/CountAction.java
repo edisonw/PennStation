@@ -44,7 +44,7 @@ public class CountAction extends FullAction {
     }
 
     @Override
-    public void onRequestComplete(ResultDeliver resultDeliver, ActionResult result) {
-        resultDeliver.deliverResult(new CountActionComplete());
+    public ActionResult onRequestComplete(ActionResult result) {
+        return new CountActionComplete();
     }
 }

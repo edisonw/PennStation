@@ -108,20 +108,24 @@ public class EventManager {
                 return;
             }
 
+            boolean completeSignal = b.getBoolean(EventServiceImpl.EXTRA_SERVICE_COMPLETE_SIGNAL, true);
+
             ActionResult result = b.getParcelable(EventServiceImpl.EXTRA_SERVICE_RESULT);
 
             if (result != null) {
                 result.setResponseInfo(new ResponseInfo(b));
-                if (result.postSticky()) {
-                    postLocalStickyEvent(result);
+                if (completeSignal) {
+                    Requester.RequestListener listener = mServiceConnection.onComplete(reqId);
+                    if (listener != null) {
+                        listener.onCompleted(reqId, result);
+                    }
                 } else {
-                    postLocalEvent(result);
+                    if (result.postSticky()) {
+                        postLocalStickyEvent(result);
+                    } else {
+                        postLocalEvent(result);
+                    }
                 }
-            }
-
-            Requester.RequestListener listener = mServiceConnection.onComplete(reqId);
-            if (listener != null) {
-                listener.onCompleted(reqId, result);
             }
         }
     }

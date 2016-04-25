@@ -12,10 +12,10 @@ public abstract class FullAction implements Action {
 
     /**
      * Called at the end of a request's completion.
-     * @param resultDeliver the result deliver if any more events need to be delivered.
      * @param result the result of this request.
      */
-    public void onRequestComplete(ResultDeliver resultDeliver, ActionResult result) {
+    public ActionResult onRequestComplete(ActionResult result) {
+        return null;
     }
 
     public static class CachePolicy {

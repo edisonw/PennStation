@@ -42,4 +42,5 @@ dependencies {
     */
     apt project(':ps_processors')
     compile project(':ps_lib')
+    compile project(':ps_rx')
 }

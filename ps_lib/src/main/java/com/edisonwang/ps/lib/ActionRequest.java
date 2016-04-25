@@ -110,35 +110,46 @@ public class ActionRequest implements Parcelable {
     public void process(ResultDeliver resultDeliver,
                         EventServiceImpl service,
                         ActionRequestEnv env,
-                        final ActionResults results) {
+                        ActionResults results) {
+        boolean isOriginalRequest = false;
+        if (results == null) {
+            results = new ActionResults();
+            isOriginalRequest = true;
+        }
         mResults = results;
         for (ActionRequest actionRequest : mDependencies) {
             actionRequest.process(resultDeliver, service, env, results);
             if (mResults.hasFailed()) {
-                onCompletion(resultDeliver, null);
+                onCompletion(resultDeliver, null, isOriginalRequest);
                 return;
             }
         }
         final Action action = mActionKey.value();
         final ActionResult result = action.processRequest(service.getContext(), this, env);
         if (result != null) {
-            resultDeliver.deliverResult(result);
+            resultDeliver.deliverResult(result, false);
             results.add(result);
             if (mResults.hasFailed()) {
-                onCompletion(resultDeliver, result);
+                onCompletion(resultDeliver, result, isOriginalRequest);
                 return;
             }
         }
         for (ActionRequest actionRequest : mNext) {
             actionRequest.process(resultDeliver, service, env, results);
         }
-        onCompletion(resultDeliver, result);
+        onCompletion(resultDeliver, result, isOriginalRequest);
     }
 
-    private void onCompletion(ResultDeliver resultDeliver, ActionResult result) {
+    private void onCompletion(ResultDeliver resultDeliver, final ActionResult result, boolean isOriginalRequest) {
         final Action action = mActionKey.value();
         if (action instanceof FullAction) {
-            ((FullAction) action).onRequestComplete(resultDeliver, result);
+            ActionResult completeResult = ((FullAction) action).onRequestComplete(result);
+            if (completeResult != null) {
+                resultDeliver.deliverResult(completeResult, false);
+            }
+        }
+        if (isOriginalRequest) {
+            resultDeliver.deliverResult(result, true);
         }
     }
 

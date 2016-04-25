@@ -1,7 +1,6 @@
 package com.edisonwang.ps.lib;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Bundle;
@@ -16,7 +15,6 @@ import android.os.Process;
 import android.util.Log;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -35,6 +33,7 @@ public class EventServiceImpl<T extends EventService> {
 
     public static final String EXTRA_SERVICE_REQUEST = "extra_service_request";
     public static final String EXTRA_SERVICE_RESULT = "extra_service_result";
+    public static final String EXTRA_SERVICE_COMPLETE_SIGNAL = "extra_service_complete_signal";
     public static final String EXTRA_CALLBACK = "extra_callback";
     public static final String EXTRA_STACKTRACE_STRING = "extra_stack_trace_string";
 
@@ -175,18 +174,20 @@ public class EventServiceImpl<T extends EventService> {
         private final SpiralServiceResponder mResponder;
         private final Bundle mBundle;
         private final int mStartId;
+        private final boolean mCompleteSignal;
 
-        public ResponderRunnable(SpiralServiceResponder responder, Bundle bundle, int startId) {
+        public ResponderRunnable(SpiralServiceResponder responder, Bundle bundle, int startId, boolean completeSignal) {
             mResponder = responder;
             mBundle = bundle;
             mStartId = startId;
+            mCompleteSignal = completeSignal;
         }
 
         public void run() {
             if (mResponder != null) {
                 mResponder.onServiceResponse(mBundle);
             }
-            if (mStartId > 0) {
+            if (mStartId > 0 && mCompleteSignal) {
                 attemptStop(mStartId);
             }
         }
@@ -196,11 +197,13 @@ public class EventServiceImpl<T extends EventService> {
         private final Messenger mResponder;
         private final Bundle mBundle;
         private final int mStartId;
+        private final boolean mCompleteSignal;
 
-        public MessengerResponderRunnable(Messenger responder, Bundle bundle, int startId) {
+        public MessengerResponderRunnable(Messenger responder, Bundle bundle, int startId, boolean completeSignal) {
             mResponder = responder;
             mBundle = bundle;
             mStartId = startId;
+            mCompleteSignal = completeSignal;
         }
 
         public void run() {
@@ -214,7 +217,7 @@ public class EventServiceImpl<T extends EventService> {
                     Log.e(TAG, "Error sending service response.", e);
                 }
             }
-            if (mStartId > 0) {
+            if (mStartId > 0 && mCompleteSignal) {
                 attemptStop(mStartId);
             }
         }
@@ -229,17 +232,20 @@ public class EventServiceImpl<T extends EventService> {
 
         private boolean mCanceled;
         private final ResultDeliver mResultDeliver = new ResultDeliver() {
-            public void deliverResult(ActionResult result) {
+            @Override
+            public void deliverResult(ActionResult result, boolean completeSignal) {
                 final Bundle bundle = new Bundle(mBundle);
                 if (result != null) {
                     bundle.putParcelable(EXTRA_SERVICE_RESULT, result);
                 }
 
+                bundle.putBoolean(EXTRA_SERVICE_COMPLETE_SIGNAL, completeSignal);
+
                 final Runnable responderRunnable;
                 if (mResponder != null) {
-                    responderRunnable = new ResponderRunnable(mResponder, bundle, mStartId);
+                    responderRunnable = new ResponderRunnable(mResponder, bundle, mStartId, completeSignal);
                 } else if (mMessenger != null) {
-                    responderRunnable = new MessengerResponderRunnable(mMessenger, bundle, mStartId);
+                    responderRunnable = new MessengerResponderRunnable(mMessenger, bundle, mStartId, completeSignal);
                 } else {
                     responderRunnable = null;
                 }
@@ -268,7 +274,7 @@ public class EventServiceImpl<T extends EventService> {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
             if (event != null) {
-                event.process(mResultDeliver, EventServiceImpl.this, new ActionRequestEnv(mBundle, mService.getActionCacheFactory()), new ActionResults());
+                event.process(mResultDeliver, EventServiceImpl.this, new ActionRequestEnv(mBundle, mService.getActionCacheFactory()), null);
             } else {
                 Log.w(TAG, "Nothing was done in " + mRequestId);
             }
