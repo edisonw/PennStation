@@ -71,6 +71,8 @@ public class PennStationProcessor extends AbstractProcessor {
         NAMES = Collections.unmodifiableSet(set);
     }
 
+    private static final HashMap<String, HashSet<String>> sProducerEvents = new HashMap<>();
+
     private Filer filer;
     private Messager messager;
     private Elements elementUtils;
@@ -98,9 +100,16 @@ public class PennStationProcessor extends AbstractProcessor {
         if (annotations.isEmpty()) {
             return false;
         }
+        Class rxFactoryClass = null;
+        try {
+            rxFactoryClass = Class.forName("com.edisonwang.ps.rxpennstation.PsRxFactory");
+        } catch (ClassNotFoundException e) {
+            // no rx present
+        }
         System.out.println("Processing aggregations:");
         System.out.println(annotations + " \n");
-        boolean r = processEventProducersAndListeners(roundEnv);
+        System.out.println("Rx support? " + (rxFactoryClass != null));
+        boolean r = processEventProducersAndListeners(roundEnv, rxFactoryClass);
         boolean r2 = processRequestFactory(roundEnv);
         return r && r2;
     }
@@ -361,14 +370,13 @@ public class PennStationProcessor extends AbstractProcessor {
                 e);
     }
 
-    private boolean processEventProducersAndListeners(RoundEnvironment roundEnv) {
-        HashMap<String, HashSet<String>> producerEvents = new HashMap<>();
+    private boolean processEventProducersAndListeners(RoundEnvironment roundEnv, Class rxFactoryClass) {
         for (Element element : roundEnv.getElementsAnnotatedWith(EventProducer.class)) {
             if (element.getKind() != ElementKind.CLASS) {
                 error(element, "You cannot annotate " + element.getSimpleName() + " with " + EventProducer.class);
                 return true;
             }
-            getEventsFromProducer(producerEvents, (TypeElement) element);
+            getEventsFromProducer(sProducerEvents, (TypeElement) element, rxFactoryClass);
         }
 
         for (Element element : roundEnv.getElementsAnnotatedWith(EventListener.class)) {
@@ -377,9 +385,9 @@ public class PennStationProcessor extends AbstractProcessor {
             HashSet<String> producers = getAnnotatedClassesVariable(typed, "producers", EventListener.class);
             HashSet<String> listenedToEvents = new HashSet<>();
             for (String producer : producers) {
-                HashSet<String> events = producerEvents.get(producer);
+                HashSet<String> events = sProducerEvents.get(producer);
                 if (events == null) {
-                    events = getEventsFromProducer(producerEvents, elementUtils.getTypeElement(producer));
+                    events = getEventsFromProducer(sProducerEvents, elementUtils.getTypeElement(producer), rxFactoryClass);
                     if (events == null) {
                         error(element, "Producer " + producer + " not registered, have you annotated it? ");
                     }
@@ -404,7 +412,7 @@ public class PennStationProcessor extends AbstractProcessor {
         return false;
     }
 
-    private HashSet<String> getEventsFromProducer(HashMap<String, HashSet<String>> producerEvents, TypeElement typed) {
+    private HashSet<String> getEventsFromProducer(HashMap<String, HashSet<String>> producerEvents, TypeElement typed, Class rxFactoryClass) {
         String typedName = typed.getQualifiedName().toString();
         HashSet<String> events = producerEvents.get(typedName);
         if (events == null) {
@@ -418,7 +426,7 @@ public class PennStationProcessor extends AbstractProcessor {
 
             for (Event resultEvent : eventProducer.generated()) {
                 try {
-                    events.add(generateResultClass(typed, resultEvent));
+                    events.add(generateResultClass(typed, resultEvent, rxFactoryClass));
                 } catch (IncompleteAnnotationException e) {
                     System.err.println("Incomplete annotation found for " + typed.getQualifiedName());
                     throw e;
@@ -431,7 +439,7 @@ public class PennStationProcessor extends AbstractProcessor {
         return events;
     }
 
-    private String generateResultClass(TypeElement typed, Event resultEvent) {
+    private String generateResultClass(TypeElement typed, Event resultEvent, Class rxFactoryClass) {
         String baseClassString;
         try {
             baseClassString = resultEvent.base().getCanonicalName();
@@ -462,6 +470,7 @@ public class PennStationProcessor extends AbstractProcessor {
                     parcelerName, field.required()));
         }
 
+
         try {
             String postFix = resultEvent.postFix();
             if (postFix == null || postFix.length() == 0) {
@@ -482,6 +491,10 @@ public class PennStationProcessor extends AbstractProcessor {
 
             for (ParcelableClassFieldParsed p : parsed) {
                 typeBuilder.addField(p.kind.type, p.name, Modifier.PUBLIC);
+            }
+
+            if (rxFactoryClass != null) {
+                addRxEventClassContent(typeBuilder, eventClassName, rxFactoryClass);
             }
 
             MethodSpec.Builder ctr = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC);
@@ -548,6 +561,12 @@ public class PennStationProcessor extends AbstractProcessor {
         } catch (Throwable e) {
             throw new IllegalArgumentException("Failed to write.", e);
         }
+    }
+
+    private void addRxEventClassContent(TypeSpec.Builder typeBuilder, String eventClassName, Class rxFactoryClass) {
+        typeBuilder.addField(FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(rxFactoryClass), ClassName.bestGuess(eventClassName)),
+                "RxRequestId", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                .initializer("new $L<>($L.class)", rxFactoryClass.getName(), eventClassName).build());
     }
 
     private String packageFromQualifiedName(String originalClassName) {
