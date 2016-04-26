@@ -42,11 +42,10 @@ public class EventServiceImpl<T extends EventService> {
 
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private final T mService;
-    private ActionExecutor mExecutor;
     private final int[] mTaskLock = new int[0];
     private final HashMap<String, ExecutionRunnable> mSubmittedTasks = new HashMap<>();
     private final Messenger mMessenger = new Messenger(new EventServiceHandler(new WeakReference<EventServiceImpl>(this)));
-
+    private ActionExecutor mExecutor;
     private LinkedHashMap<Integer, Boolean> mStartIds;
 
     public EventServiceImpl(T service) {
@@ -103,6 +102,41 @@ public class EventServiceImpl<T extends EventService> {
 
     public T getContext() {
         return mService;
+    }
+
+    private void cancelRequest(Message msg) {
+        Bundle data = msg.getData();
+        String reqId = data.getString(EventServiceConnection.EXTRA_REQUEST_ID);
+        synchronized (mTaskLock) {
+            ExecutionRunnable runningTask = mSubmittedTasks.remove(reqId);
+            if (runningTask != null) {
+                Log.i(TAG, "Request cancelled." + reqId);
+                runningTask.setCanceled(true);
+            }
+        }
+    }
+
+    private void performRequest(Message msg) {
+        performRequest(new ExecutionRunnable(0, msg.getData(), null, msg.replyTo));
+    }
+
+    private void performRequest(ExecutionRunnable task) {
+        final Bundle data = task.getBundle();
+        data.setClassLoader(mService.getClassLoader());
+        if (task.mRequestId != null) {
+            synchronized (mTaskLock) {
+                mSubmittedTasks.put(task.mRequestId, task);
+            }
+        }
+        if (data.getBoolean(EventServiceImpl.EXTRA_REQUEST_QUEUE_NEW_THREAD, true)) {
+            mExecutor.executeOnNewThread(task);
+        } else {
+            final int queueLimit = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_LIMIT, 2);
+            final String tag = data.getString(EventServiceImpl.EXTRA_REQUEST_QUEUE_TAG);
+            final String queueTag = tag != null ? tag : ActionExecutor.DEFAULT;
+            final int queuePriority = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_PRIORITY, 0);
+            mExecutor.execute(task, queueLimit, queueTag, queuePriority);
+        }
     }
 
     public interface EventServiceResponseHandler {
@@ -170,6 +204,32 @@ public class EventServiceImpl<T extends EventService> {
 
     }
 
+    private static class EventServiceHandler extends Handler {
+
+        private final WeakReference<EventServiceImpl> mServiceImpl;
+
+        private EventServiceHandler(WeakReference<EventServiceImpl> serviceImpl) {
+            mServiceImpl = serviceImpl;
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            EventServiceImpl serviceImpl = mServiceImpl.get();
+            if (serviceImpl != null) {
+                switch (msg.what) {
+                    case PERFORM_REQUEST:
+                        serviceImpl.performRequest(msg);
+                        break;
+                    case CANCEL_REQUEST:
+                        serviceImpl.cancelRequest(msg);
+                        break;
+                }
+            } else {
+                Log.e(TAG, "ServiceImpl is already dead.");
+            }
+        }
+    }
+
     private class ResponderRunnable implements Runnable {
         private final SpiralServiceResponder mResponder;
         private final Bundle mBundle;
@@ -229,8 +289,6 @@ public class EventServiceImpl<T extends EventService> {
         private final Messenger mMessenger;
         private final SpiralServiceResponder mResponder;
         private final String mRequestId;
-
-        private boolean mCanceled;
         private final ResultDeliver mResultDeliver = new ResultDeliver() {
             @Override
             public void deliverResult(ActionResult result, boolean completeSignal) {
@@ -255,6 +313,8 @@ public class EventServiceImpl<T extends EventService> {
                 }
             }
         };
+        private boolean mCanceled;
+
         // Optionally either responder or messenger will be used to send response back to ui
         public ExecutionRunnable(int startId, Bundle bundle,
                                  SpiralServiceResponder responder, Messenger messenger) {
@@ -299,67 +359,6 @@ public class EventServiceImpl<T extends EventService> {
 
         public Bundle getBundle() {
             return mBundle;
-        }
-    }
-
-    private void cancelRequest(Message msg) {
-        Bundle data = msg.getData();
-        String reqId = data.getString(EventServiceConnection.EXTRA_REQUEST_ID);
-        synchronized (mTaskLock) {
-            ExecutionRunnable runningTask = mSubmittedTasks.remove(reqId);
-            if (runningTask != null) {
-                Log.i(TAG, "Request cancelled." + reqId);
-                runningTask.setCanceled(true);
-            }
-        }
-    }
-
-    private void performRequest(Message msg) {
-        performRequest(new ExecutionRunnable(0, msg.getData(), null, msg.replyTo));
-    }
-
-    private void performRequest(ExecutionRunnable task) {
-        final Bundle data = task.getBundle();
-        data.setClassLoader(mService.getClassLoader());
-        if (task.mRequestId != null) {
-            synchronized (mTaskLock) {
-                mSubmittedTasks.put(task.mRequestId, task);
-            }
-        }
-        if (data.getBoolean(EventServiceImpl.EXTRA_REQUEST_QUEUE_NEW_THREAD, true)) {
-            mExecutor.executeOnNewThread(task);
-        } else {
-            final int queueLimit = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_LIMIT, 2);
-            final String tag = data.getString(EventServiceImpl.EXTRA_REQUEST_QUEUE_TAG);
-            final String queueTag = tag != null ? tag : ActionExecutor.DEFAULT;
-            final int queuePriority = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_PRIORITY, 0);
-            mExecutor.execute(task, queueLimit, queueTag, queuePriority);
-        }
-    }
-
-    private static class EventServiceHandler extends Handler {
-
-        private final WeakReference<EventServiceImpl> mServiceImpl;
-
-        private EventServiceHandler(WeakReference<EventServiceImpl> serviceImpl) {
-            mServiceImpl = serviceImpl;
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            EventServiceImpl serviceImpl = mServiceImpl.get();
-            if (serviceImpl != null) {
-                switch (msg.what) {
-                    case PERFORM_REQUEST:
-                        serviceImpl.performRequest(msg);
-                        break;
-                    case CANCEL_REQUEST:
-                        serviceImpl.cancelRequest(msg);
-                        break;
-                }
-            } else {
-                Log.e(TAG, "ServiceImpl is already dead.");
-            }
         }
     }
 }

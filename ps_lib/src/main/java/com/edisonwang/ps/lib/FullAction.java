@@ -12,23 +12,11 @@ public abstract class FullAction implements Action {
 
     /**
      * Called at the end of a request's completion.
+     *
      * @param result the result of this request.
      */
     public ActionResult onRequestComplete(ActionResult result) {
         return null;
-    }
-
-    public static class CachePolicy {
-
-        public static final CachePolicy NotAllowed = new CachePolicy(false, 0);
-
-        public final boolean allowCache;
-        public final int maxSize;
-
-        public CachePolicy(boolean allowCache, int maxCacheSize) {
-            this.allowCache = allowCache;
-            this.maxSize = maxCacheSize;
-        }
     }
 
     protected abstract ActionResult process(Context context, ActionRequest request, RequestEnv env) throws Throwable;
@@ -86,5 +74,18 @@ public abstract class FullAction implements Action {
             mCache = env.getActionCacheFactory().getCache(this, getCachePolicy());
         }
         return mCache;
+    }
+
+    public static class CachePolicy {
+
+        public static final CachePolicy NotAllowed = new CachePolicy(false, 0);
+
+        public final boolean allowCache;
+        public final int maxSize;
+
+        public CachePolicy(boolean allowCache, int maxCacheSize) {
+            this.allowCache = allowCache;
+            this.maxSize = maxCacheSize;
+        }
     }
 }

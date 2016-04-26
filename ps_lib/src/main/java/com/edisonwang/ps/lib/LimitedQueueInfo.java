@@ -1,7 +1,6 @@
 package com.edisonwang.ps.lib;
 
 /**
- *
  * @author edi
  */
 public class LimitedQueueInfo {

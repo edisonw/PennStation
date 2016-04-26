@@ -5,5 +5,6 @@ package com.edisonwang.ps.lib;
  */
 public interface ActionCache {
     ActionResult get(ActionRequest request);
+
     void put(ActionRequest request, ActionResult result);
 }

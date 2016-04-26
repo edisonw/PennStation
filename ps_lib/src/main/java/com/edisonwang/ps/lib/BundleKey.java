@@ -19,6 +19,33 @@ public class BundleKey {
         mBundle = bundle;
     }
 
+    public static boolean equalBundles(Bundle one, Bundle two) {
+        if (one.size() != two.size()) {
+            return false;
+        }
+
+        Set<String> setOne = one.keySet();
+        Object valueOne;
+        Object valueTwo;
+
+        for (String key : setOne) {
+            valueOne = one.get(key);
+            valueTwo = two.get(key);
+            if (valueOne instanceof Bundle && valueTwo instanceof Bundle &&
+                    !equalBundles((Bundle) valueOne, (Bundle) valueTwo)) {
+                return false;
+            } else if (valueOne == null) {
+                if (valueTwo != null || !two.containsKey(key))
+                    return false;
+            } else if (!valueOne.equals(valueTwo)) {
+                Log.i("LOL", " " + valueOne + "  0  " + valueTwo);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     @Override
     public boolean equals(Object b) {
         if (!(b instanceof BundleKey)) {
@@ -51,32 +78,5 @@ public class BundleKey {
             }
         }
         return start;
-    }
-
-    public static boolean equalBundles(Bundle one, Bundle two) {
-        if (one.size() != two.size()) {
-            return false;
-        }
-
-        Set<String> setOne = one.keySet();
-        Object valueOne;
-        Object valueTwo;
-
-        for (String key : setOne) {
-            valueOne = one.get(key);
-            valueTwo = two.get(key);
-            if (valueOne instanceof Bundle && valueTwo instanceof Bundle &&
-                    !equalBundles((Bundle) valueOne, (Bundle) valueTwo)) {
-                return false;
-            } else if (valueOne == null) {
-                if (valueTwo != null || !two.containsKey(key))
-                    return false;
-            } else if (!valueOne.equals(valueTwo)) {
-                Log.i("LOL", " " + valueOne + "  0  " + valueTwo);
-                return false;
-            }
-        }
-
-        return true;
     }
 }

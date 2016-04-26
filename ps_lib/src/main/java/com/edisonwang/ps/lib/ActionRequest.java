@@ -21,15 +21,11 @@ public class ActionRequest implements Parcelable {
             return new ActionRequest[size];
         }
     };
-
-    private boolean mActionCacheAllowed = false;
-
-    private ActionKey mActionKey;
     private final ArrayList<ActionRequest> mDependencies = new ArrayList<>();
     private final ArrayList<ActionRequest> mNext = new ArrayList<>();
-
     Bundle mArgs;
-
+    private boolean mActionCacheAllowed = false;
+    private ActionKey mActionKey;
     //Transient args
     private ActionResults mResults;
 
@@ -54,6 +50,17 @@ public class ActionRequest implements Parcelable {
     public ActionRequest(ActionKey actionKey) {
         mActionKey = actionKey;
         mArgs = new Bundle();
+    }
+
+    protected ActionRequest(Parcel in) {
+        mActionCacheAllowed = in.readInt() == 1;
+        mActionKey = (ActionKey) in.readSerializable();
+        in.readList(mDependencies, getClassLoader());
+        in.readList(mNext, getClassLoader());
+        mArgs = in.readBundle(getClass().getClassLoader());
+        if (mArgs == null) {
+            mArgs = new Bundle();
+        }
     }
 
     public ActionRequest actionCacheAllowed(boolean cacheAllowed) {
@@ -85,17 +92,6 @@ public class ActionRequest implements Parcelable {
     @Override
     public int describeContents() {
         return 0;
-    }
-
-    protected ActionRequest(Parcel in) {
-        mActionCacheAllowed = in.readInt() == 1;
-        mActionKey = (ActionKey) in.readSerializable();
-        in.readList(mDependencies, getClassLoader());
-        in.readList(mNext, getClassLoader());
-        mArgs = in.readBundle(getClass().getClassLoader());
-        if (mArgs == null) {
-            mArgs = new Bundle();
-        }
     }
 
     @Override

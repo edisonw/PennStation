@@ -83,9 +83,9 @@ public class EventManager {
     }
 
     protected void requestAction(final ActionRequest request,
-                              final LimitedQueueInfo queueInfo,
-                              long delay,
-                              final WeakReference<Requester.RequestListener> listener) {
+                                 final LimitedQueueInfo queueInfo,
+                                 long delay,
+                                 final WeakReference<Requester.RequestListener> listener) {
         if (delay > 0) {
             mHandler.postDelayed(new Runnable() {
                 @Override

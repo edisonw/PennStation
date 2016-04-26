@@ -8,27 +8,10 @@ import java.lang.ref.WeakReference;
  * @author edi
  */
 public class Requester {
+    public long delay;
     private ActionRequest request;
     private ActionRequestHelper helper;
     private LimitedQueueInfo queue;
-    public long delay;
-
-    public interface RequestListener {
-        /**
-         * Called right before the request is made.
-         */
-        void onRequested(Bundle bundle, String requestId);
-
-        /**
-         * Called right after the request results are posted.
-         */
-        void onCompleted(String reqId, ActionResult result);
-
-        /**
-         * Called when request was cancelled.
-         */
-        void onCancelled(String requestId);
-    }
 
     public Requester(ActionRequest request) {
         this.request = request;
@@ -60,5 +43,22 @@ public class Requester {
             request = helper.buildRequest();
         }
         eventManager.requestAction(request, queue, delay, listener);
+    }
+
+    public interface RequestListener {
+        /**
+         * Called right before the request is made.
+         */
+        void onRequested(Bundle bundle, String requestId);
+
+        /**
+         * Called right after the request results are posted.
+         */
+        void onCompleted(String reqId, ActionResult result);
+
+        /**
+         * Called when request was cancelled.
+         */
+        void onCancelled(String requestId);
     }
 }
