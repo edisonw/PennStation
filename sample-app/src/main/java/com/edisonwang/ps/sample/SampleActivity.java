@@ -10,6 +10,7 @@ import android.widget.EditText;
 import com.edisonwang.ps.annotations.EventListener;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestHelper;
+import com.edisonwang.ps.lib.ActionResult;
 import com.edisonwang.ps.lib.EventService;
 import com.edisonwang.ps.lib.LimitedQueueInfo;
 import com.edisonwang.ps.lib.PennStation;
@@ -25,6 +26,9 @@ import com.edisonwang.ps.sample.events.SimpleActionEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import rx.Subscriber;
+import rx.Subscription;
 
 @EventListener(producers = {
         ComplicatedAction.class,
@@ -77,6 +81,7 @@ public class SampleActivity extends Activity {
     };
 
     private EditText mUpdates;
+    private Subscription mSubscription;
 
     @SuppressLint("SetTextI18n")
     private void onReceived(String text) {
@@ -101,12 +106,29 @@ public class SampleActivity extends Activity {
     protected void onResume() {
         super.onResume();
         PennStation.registerListener(mListener);
+        mSubscription = SimpleActionObserver.create().subscribe(new Subscriber<ActionResult>() {
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onNext(ActionResult actionResult) {
+                Log.i("PennStationTest", "There was an simple action.");
+            }
+        });
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         PennStation.unRegisterListener(mListener);
+        mSubscription.unsubscribe();
     }
 
     public void requestAction(ActionRequest request) {
@@ -162,7 +184,7 @@ public class SampleActivity extends Activity {
 
     public void testCancelCurrent(View button) {
         synchronized (mRequestIds) {
-            for (String id: mRequestIds) {
+            for (String id : mRequestIds) {
                 PennStation.cancelAction(id);
             }
         }

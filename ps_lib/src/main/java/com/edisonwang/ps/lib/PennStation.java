@@ -13,40 +13,13 @@ public class PennStation {
 
     }
 
-    public static class PennStationOptions {
-        /**
-         * The event service class that actions will be running on.
-         */
-        public final Class<? extends EventService> eventServiceClass;
-
-        /**
-         * If null, events will always run on new threads, if set, it will be used as default.
-         */
-        public LimitedQueueInfo defaultUseLimitedQueueInfo;
-
-        /**
-         * If true, requests stacks will be logged, and have a slight performance reduction.
-         */
-        public boolean logRequestStacks;
-
-        /**
-         * If true, if there are too many requests pending in the global queue, logs will be emitted.
-         */
-        public int pendingWarningThreshold;
-
-        public PennStationOptions(Class<? extends EventService> eventServiceClass) {
-            this.eventServiceClass = eventServiceClass;
-        }
-    }
-
     /**
      * You can call this inside Application.onCreate();
-     *
+     * <p/>
      * This only needs to called once, call getManager() after.
      *
      * @param application Android Application Singleton.
-     * @param options Options for PennStation.
-     *
+     * @param options     Options for PennStation.
      * @return the instance that was created for this process.
      */
     public static synchronized EventManager init(Application application,
@@ -98,6 +71,7 @@ public class PennStation {
 
     /**
      * Cancel a request that has not started running yet.
+     *
      * @param requestId the request id,
      */
     public static void cancelAction(String requestId) {
@@ -106,6 +80,32 @@ public class PennStation {
 
     public <T> T getStickyEvent(Class<T> eventType) {
         return getManager().getStickyEvent(eventType);
+    }
+
+    public static class PennStationOptions {
+        /**
+         * The event service class that actions will be running on.
+         */
+        public final Class<? extends EventService> eventServiceClass;
+
+        /**
+         * If null, events will always run on new threads, if set, it will be used as default.
+         */
+        public LimitedQueueInfo defaultUseLimitedQueueInfo;
+
+        /**
+         * If true, requests stacks will be logged, and have a slight performance reduction.
+         */
+        public boolean logRequestStacks;
+
+        /**
+         * If true, if there are too many requests pending in the global queue, logs will be emitted.
+         */
+        public int pendingWarningThreshold;
+
+        public PennStationOptions(Class<? extends EventService> eventServiceClass) {
+            this.eventServiceClass = eventServiceClass;
+        }
     }
 
 }

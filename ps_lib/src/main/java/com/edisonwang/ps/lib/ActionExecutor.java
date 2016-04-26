@@ -13,24 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class ActionExecutor {
 
     public static final String DEFAULT = "default";
-
-    static class LimitedExecutor {
-        private final ThreadPoolExecutor service;
-        private final PriorityBlockingQueue<Runnable> queue;
-
-        public LimitedExecutor(int limit) {
-            queue = new PriorityBlockingQueue<>(2, new PrioritizedRunnable.PrioritizedRunnableComparator());
-            service = new ThreadPoolExecutor(limit, limit,
-                    0L, TimeUnit.MILLISECONDS, queue);
-        }
-
-        public void execute(PrioritizedRunnable runnable) {
-            service.execute(runnable);
-        }
-    }
-
     private final ExecutorService mFullParallelExecutor = Executors.newCachedThreadPool();
-
     private final HashMap<Integer, HashMap<String, LimitedExecutor>> mLimitedExecutors = new HashMap<>();
 
     public void executeOnNewThread(Runnable runnable) {
@@ -53,6 +36,21 @@ public class ActionExecutor {
                 limitedQueue.put(queueTag, executor);
             }
             executor.execute(new PrioritizedRunnable(queuePriority, runnable));
+        }
+    }
+
+    static class LimitedExecutor {
+        private final ThreadPoolExecutor service;
+        private final PriorityBlockingQueue<Runnable> queue;
+
+        public LimitedExecutor(int limit) {
+            queue = new PriorityBlockingQueue<>(2, new PrioritizedRunnable.PrioritizedRunnableComparator());
+            service = new ThreadPoolExecutor(limit, limit,
+                    0L, TimeUnit.MILLISECONDS, queue);
+        }
+
+        public void execute(PrioritizedRunnable runnable) {
+            service.execute(runnable);
         }
     }
 

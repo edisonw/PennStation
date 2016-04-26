@@ -1,7 +1,6 @@
 package com.edisonwang.ps.lib;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Bundle;
@@ -16,7 +15,6 @@ import android.os.Process;
 import android.util.Log;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -24,7 +22,7 @@ import java.util.Map;
 /**
  * @author edi
  */
-public class EventServiceImpl<T extends Service> {
+public class EventServiceImpl<T extends EventService> {
 
     public static final String TAG = "EventService";
 
@@ -35,6 +33,7 @@ public class EventServiceImpl<T extends Service> {
 
     public static final String EXTRA_SERVICE_REQUEST = "extra_service_request";
     public static final String EXTRA_SERVICE_RESULT = "extra_service_result";
+    public static final String EXTRA_SERVICE_COMPLETE_SIGNAL = "extra_service_complete_signal";
     public static final String EXTRA_CALLBACK = "extra_callback";
     public static final String EXTRA_STACKTRACE_STRING = "extra_stack_trace_string";
 
@@ -43,11 +42,10 @@ public class EventServiceImpl<T extends Service> {
 
     private final Handler mMainHandler = new Handler(Looper.getMainLooper());
     private final T mService;
-    private ActionExecutor mExecutor;
     private final int[] mTaskLock = new int[0];
     private final HashMap<String, ExecutionRunnable> mSubmittedTasks = new HashMap<>();
     private final Messenger mMessenger = new Messenger(new EventServiceHandler(new WeakReference<EventServiceImpl>(this)));
-
+    private ActionExecutor mExecutor;
     private LinkedHashMap<Integer, Boolean> mStartIds;
 
     public EventServiceImpl(T service) {
@@ -104,6 +102,41 @@ public class EventServiceImpl<T extends Service> {
 
     public T getContext() {
         return mService;
+    }
+
+    private void cancelRequest(Message msg) {
+        Bundle data = msg.getData();
+        String reqId = data.getString(EventServiceConnection.EXTRA_REQUEST_ID);
+        synchronized (mTaskLock) {
+            ExecutionRunnable runningTask = mSubmittedTasks.remove(reqId);
+            if (runningTask != null) {
+                Log.i(TAG, "Request cancelled." + reqId);
+                runningTask.setCanceled(true);
+            }
+        }
+    }
+
+    private void performRequest(Message msg) {
+        performRequest(new ExecutionRunnable(0, msg.getData(), null, msg.replyTo));
+    }
+
+    private void performRequest(ExecutionRunnable task) {
+        final Bundle data = task.getBundle();
+        data.setClassLoader(mService.getClassLoader());
+        if (task.mRequestId != null) {
+            synchronized (mTaskLock) {
+                mSubmittedTasks.put(task.mRequestId, task);
+            }
+        }
+        if (data.getBoolean(EventServiceImpl.EXTRA_REQUEST_QUEUE_NEW_THREAD, true)) {
+            mExecutor.executeOnNewThread(task);
+        } else {
+            final int queueLimit = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_LIMIT, 2);
+            final String tag = data.getString(EventServiceImpl.EXTRA_REQUEST_QUEUE_TAG);
+            final String queueTag = tag != null ? tag : ActionExecutor.DEFAULT;
+            final int queuePriority = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_PRIORITY, 0);
+            mExecutor.execute(task, queueLimit, queueTag, queuePriority);
+        }
     }
 
     public interface EventServiceResponseHandler {
@@ -171,22 +204,50 @@ public class EventServiceImpl<T extends Service> {
 
     }
 
+    private static class EventServiceHandler extends Handler {
+
+        private final WeakReference<EventServiceImpl> mServiceImpl;
+
+        private EventServiceHandler(WeakReference<EventServiceImpl> serviceImpl) {
+            mServiceImpl = serviceImpl;
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            EventServiceImpl serviceImpl = mServiceImpl.get();
+            if (serviceImpl != null) {
+                switch (msg.what) {
+                    case PERFORM_REQUEST:
+                        serviceImpl.performRequest(msg);
+                        break;
+                    case CANCEL_REQUEST:
+                        serviceImpl.cancelRequest(msg);
+                        break;
+                }
+            } else {
+                Log.e(TAG, "ServiceImpl is already dead.");
+            }
+        }
+    }
+
     private class ResponderRunnable implements Runnable {
         private final SpiralServiceResponder mResponder;
         private final Bundle mBundle;
         private final int mStartId;
+        private final boolean mCompleteSignal;
 
-        public ResponderRunnable(SpiralServiceResponder responder, Bundle bundle, int startId) {
+        public ResponderRunnable(SpiralServiceResponder responder, Bundle bundle, int startId, boolean completeSignal) {
             mResponder = responder;
             mBundle = bundle;
             mStartId = startId;
+            mCompleteSignal = completeSignal;
         }
 
         public void run() {
             if (mResponder != null) {
                 mResponder.onServiceResponse(mBundle);
             }
-            if (mStartId > 0) {
+            if (mStartId > 0 && mCompleteSignal) {
                 attemptStop(mStartId);
             }
         }
@@ -196,11 +257,13 @@ public class EventServiceImpl<T extends Service> {
         private final Messenger mResponder;
         private final Bundle mBundle;
         private final int mStartId;
+        private final boolean mCompleteSignal;
 
-        public MessengerResponderRunnable(Messenger responder, Bundle bundle, int startId) {
+        public MessengerResponderRunnable(Messenger responder, Bundle bundle, int startId, boolean completeSignal) {
             mResponder = responder;
             mBundle = bundle;
             mStartId = startId;
+            mCompleteSignal = completeSignal;
         }
 
         public void run() {
@@ -214,7 +277,7 @@ public class EventServiceImpl<T extends Service> {
                     Log.e(TAG, "Error sending service response.", e);
                 }
             }
-            if (mStartId > 0) {
+            if (mStartId > 0 && mCompleteSignal) {
                 attemptStop(mStartId);
             }
         }
@@ -226,20 +289,21 @@ public class EventServiceImpl<T extends Service> {
         private final Messenger mMessenger;
         private final SpiralServiceResponder mResponder;
         private final String mRequestId;
-
-        private boolean mCanceled;
         private final ResultDeliver mResultDeliver = new ResultDeliver() {
-            public void deliverResult(ActionResult result) {
+            @Override
+            public void deliverResult(ActionResult result, boolean completeSignal) {
                 final Bundle bundle = new Bundle(mBundle);
                 if (result != null) {
                     bundle.putParcelable(EXTRA_SERVICE_RESULT, result);
                 }
 
+                bundle.putBoolean(EXTRA_SERVICE_COMPLETE_SIGNAL, completeSignal);
+
                 final Runnable responderRunnable;
                 if (mResponder != null) {
-                    responderRunnable = new ResponderRunnable(mResponder, bundle, mStartId);
+                    responderRunnable = new ResponderRunnable(mResponder, bundle, mStartId, completeSignal);
                 } else if (mMessenger != null) {
-                    responderRunnable = new MessengerResponderRunnable(mMessenger, bundle, mStartId);
+                    responderRunnable = new MessengerResponderRunnable(mMessenger, bundle, mStartId, completeSignal);
                 } else {
                     responderRunnable = null;
                 }
@@ -249,6 +313,8 @@ public class EventServiceImpl<T extends Service> {
                 }
             }
         };
+        private boolean mCanceled;
+
         // Optionally either responder or messenger will be used to send response back to ui
         public ExecutionRunnable(int startId, Bundle bundle,
                                  SpiralServiceResponder responder, Messenger messenger) {
@@ -268,7 +334,7 @@ public class EventServiceImpl<T extends Service> {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             ActionRequest event = mBundle.getParcelable(EXTRA_SERVICE_REQUEST);
             if (event != null) {
-                event.process(mResultDeliver, EventServiceImpl.this, mBundle, new ActionResults());
+                event.process(mResultDeliver, EventServiceImpl.this, new ActionRequestEnv(mBundle, mService.getActionCacheFactory()), null);
             } else {
                 Log.w(TAG, "Nothing was done in " + mRequestId);
             }
@@ -293,67 +359,6 @@ public class EventServiceImpl<T extends Service> {
 
         public Bundle getBundle() {
             return mBundle;
-        }
-    }
-
-    private void cancelRequest(Message msg) {
-        Bundle data = msg.getData();
-        String reqId = data.getString(EventServiceConnection.EXTRA_REQUEST_ID);
-        synchronized (mTaskLock) {
-            ExecutionRunnable runningTask = mSubmittedTasks.remove(reqId);
-            if (runningTask != null) {
-                Log.i(TAG, "Request cancelled." + reqId);
-                runningTask.setCanceled(true);
-            }
-        }
-    }
-
-    private void performRequest(Message msg) {
-        performRequest(new ExecutionRunnable(0, msg.getData(), null, msg.replyTo));
-    }
-
-    private void performRequest(ExecutionRunnable task) {
-        final Bundle data = task.getBundle();
-        data.setClassLoader(mService.getClassLoader());
-        if (task.mRequestId != null) {
-            synchronized (mTaskLock) {
-                mSubmittedTasks.put(task.mRequestId, task);
-            }
-        }
-        if (data.getBoolean(EventServiceImpl.EXTRA_REQUEST_QUEUE_NEW_THREAD, true)) {
-            mExecutor.executeOnNewThread(task);
-        } else {
-            final int queueLimit = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_LIMIT, 2);
-            final String tag = data.getString(EventServiceImpl.EXTRA_REQUEST_QUEUE_TAG);
-            final String queueTag = tag != null ? tag : ActionExecutor.DEFAULT;
-            final int queuePriority = data.getInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_PRIORITY, 0);
-            mExecutor.execute(task, queueLimit, queueTag, queuePriority);
-        }
-    }
-
-    private static class EventServiceHandler extends Handler {
-
-        private final WeakReference<EventServiceImpl> mServiceImpl;
-
-        private EventServiceHandler(WeakReference<EventServiceImpl> serviceImpl) {
-            mServiceImpl = serviceImpl;
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            EventServiceImpl serviceImpl = mServiceImpl.get();
-            if (serviceImpl != null) {
-                switch (msg.what) {
-                    case PERFORM_REQUEST:
-                        serviceImpl.performRequest(msg);
-                        break;
-                    case CANCEL_REQUEST:
-                        serviceImpl.cancelRequest(msg);
-                        break;
-                }
-            } else {
-                Log.e(TAG, "ServiceImpl is already dead.");
-            }
         }
     }
 }

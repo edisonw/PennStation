@@ -7,4 +7,6 @@ import android.os.Bundle;
  */
 public interface RequestEnv {
     Bundle getServiceBundle();
+
+    ActionCacheFactory getActionCacheFactory();
 }

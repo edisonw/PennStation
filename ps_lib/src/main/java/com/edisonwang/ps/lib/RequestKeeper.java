@@ -33,6 +33,7 @@ public class RequestKeeper {
 
     /**
      * Cancel the last request of this type made by this keeper.
+     *
      * @param type the type of action that will get cancelled.
      */
     public void cancelPrevious(Class<? extends Action> type) {
@@ -47,6 +48,7 @@ public class RequestKeeper {
 
     /**
      * Cancel the last request of this type made by this keeper and then add it to the queue.
+     *
      * @param request request to replace or add the current with.
      */
     public void addRequestAsReplacement(ActionRequest request, LimitedQueueInfo queueInfo) {
@@ -56,8 +58,8 @@ public class RequestKeeper {
 
     /**
      * Required method to be called if you are using RequestKeeper to funnel your requests.
-     * @param result the result that came back.
      *
+     * @param result the result that came back.
      * @return true if this event was made via this request keeper.
      */
     public boolean onEvent(ActionResult result) {
@@ -69,7 +71,7 @@ public class RequestKeeper {
             boolean eventRemoved = mRequestIds.remove(requestId);
             if (eventRemoved) {
                 Class key = null;
-                for (Class type: mLastRequestIdByType.keySet()) {
+                for (Class type : mLastRequestIdByType.keySet()) {
                     if (requestId.equals(mLastRequestIdByType.get(type))) {
                         key = type;
                         break;

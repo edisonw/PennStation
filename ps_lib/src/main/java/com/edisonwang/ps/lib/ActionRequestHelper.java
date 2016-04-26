@@ -10,11 +10,10 @@ import java.util.ArrayList;
  */
 public abstract class ActionRequestHelper {
 
-    protected Intent mVariableHolder = new Intent();
-    private Bundle mValues;
-
     private final ArrayList<ActionRequestHelper> mDependencies = new ArrayList<>();
     private final ArrayList<ActionRequestHelper> mNext = new ArrayList<>();
+    protected Intent mVariableHolder = new Intent();
+    private Bundle mValues;
     private boolean mCacheAllowed;
 
     protected void setVariableValues(Bundle values) {
@@ -42,6 +41,7 @@ public abstract class ActionRequestHelper {
 
     /**
      * This request will depend on this dependency's success.
+     *
      * @param dependency the depended request.
      * @return self
      */
@@ -52,6 +52,7 @@ public abstract class ActionRequestHelper {
 
     /**
      * This request will be executed if the current request succeed.
+     *
      * @param nextAction the action to execute next.
      * @return self
      */

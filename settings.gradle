@@ -1,1 +1,1 @@
-include ':sample-app', ':ps_lib', ':ps_annotations', ':ps_processors'
+include ':sample-app', ':ps_lib', ':ps_annotations', ':ps_processors', ':ps_rx'

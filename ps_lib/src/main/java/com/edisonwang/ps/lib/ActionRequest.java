@@ -21,15 +21,11 @@ public class ActionRequest implements Parcelable {
             return new ActionRequest[size];
         }
     };
-
-    private boolean mActionCacheAllowed = false;
-
-    private ActionKey mActionKey;
     private final ArrayList<ActionRequest> mDependencies = new ArrayList<>();
     private final ArrayList<ActionRequest> mNext = new ArrayList<>();
-
     Bundle mArgs;
-
+    private boolean mActionCacheAllowed = false;
+    private ActionKey mActionKey;
     //Transient args
     private ActionResults mResults;
 
@@ -54,6 +50,17 @@ public class ActionRequest implements Parcelable {
     public ActionRequest(ActionKey actionKey) {
         mActionKey = actionKey;
         mArgs = new Bundle();
+    }
+
+    protected ActionRequest(Parcel in) {
+        mActionCacheAllowed = in.readInt() == 1;
+        mActionKey = (ActionKey) in.readSerializable();
+        in.readList(mDependencies, getClassLoader());
+        in.readList(mNext, getClassLoader());
+        mArgs = in.readBundle(getClass().getClassLoader());
+        if (mArgs == null) {
+            mArgs = new Bundle();
+        }
     }
 
     public ActionRequest actionCacheAllowed(boolean cacheAllowed) {
@@ -87,17 +94,6 @@ public class ActionRequest implements Parcelable {
         return 0;
     }
 
-    protected ActionRequest(Parcel in) {
-        mActionCacheAllowed = in.readInt() == 1;
-        mActionKey = (ActionKey) in.readSerializable();
-        in.readList(mDependencies, getClassLoader());
-        in.readList(mNext, getClassLoader());
-        mArgs = in.readBundle(getClass().getClassLoader());
-        if (mArgs == null) {
-            mArgs = new Bundle();
-        }
-    }
-
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(mActionCacheAllowed ? 1 : 0);
@@ -108,37 +104,48 @@ public class ActionRequest implements Parcelable {
     }
 
     public void process(ResultDeliver resultDeliver,
-                                           EventServiceImpl service,
-                                           Bundle bundle,
-                                           final ActionResults results) {
+                        EventServiceImpl service,
+                        ActionRequestEnv env,
+                        ActionResults results) {
+        boolean isOriginalRequest = false;
+        if (results == null) {
+            results = new ActionResults();
+            isOriginalRequest = true;
+        }
         mResults = results;
         for (ActionRequest actionRequest : mDependencies) {
-            actionRequest.process(resultDeliver, service, bundle, results);
+            actionRequest.process(resultDeliver, service, env, results);
             if (mResults.hasFailed()) {
-                onCompletion(resultDeliver, null);
+                onCompletion(resultDeliver, null, isOriginalRequest);
                 return;
             }
         }
         final Action action = mActionKey.value();
-        final ActionResult result = action.processRequest(service.getContext(), this, new ActionRequestEnv(bundle));
+        final ActionResult result = action.processRequest(service.getContext(), this, env);
         if (result != null) {
-            resultDeliver.deliverResult(result);
+            resultDeliver.deliverResult(result, false);
             results.add(result);
             if (mResults.hasFailed()) {
-                onCompletion(resultDeliver, result);
+                onCompletion(resultDeliver, result, isOriginalRequest);
                 return;
             }
         }
         for (ActionRequest actionRequest : mNext) {
-            actionRequest.process(resultDeliver, service, bundle, results);
+            actionRequest.process(resultDeliver, service, env, results);
         }
-        onCompletion(resultDeliver, result);
+        onCompletion(resultDeliver, result, isOriginalRequest);
     }
 
-    private void onCompletion(ResultDeliver resultDeliver, ActionResult result) {
+    private void onCompletion(ResultDeliver resultDeliver, final ActionResult result, boolean isOriginalRequest) {
         final Action action = mActionKey.value();
         if (action instanceof FullAction) {
-            ((FullAction) action).onRequestComplete(resultDeliver, result);
+            ActionResult completeResult = ((FullAction) action).onRequestComplete(result);
+            if (completeResult != null) {
+                resultDeliver.deliverResult(completeResult, false);
+            }
+        }
+        if (isOriginalRequest) {
+            resultDeliver.deliverResult(result, true);
         }
     }
 

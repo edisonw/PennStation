@@ -1,55 +1,22 @@
 package com.edisonwang.ps.lib;
 
-import android.annotation.TargetApi;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
-import android.util.LruCache;
 
 /**
  * @author edi
  */
 public abstract class FullAction implements Action {
 
-    private static final String TAG = "FullAction";
-
-    private final LruCache<BundleKey, ActionResult> mCache;
-
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
-    public FullAction() {
-        CachePolicy policy = getCachePolicy();
-        if (policy.allowCache) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
-                mCache = new LruCache<>(policy.maxSize);
-            } else {
-                Log.e(EventServiceImpl.TAG, "Cache is not supported pre ICS for PennStation.");
-                mCache = null;
-            }
-        } else {
-            mCache = null;
-        }
-    }
+    private ActionCache mCache;
 
     /**
      * Called at the end of a request's completion.
-     * @param resultDeliver the result deliver if any more events need to be delivered.
+     *
      * @param result the result of this request.
      */
-    public void onRequestComplete(ResultDeliver resultDeliver, ActionResult result) {
-    }
-
-    public static class CachePolicy {
-
-        public static final CachePolicy NotAllowed = new CachePolicy(false, 0);
-
-        public final boolean allowCache;
-        public final int maxSize;
-
-        public CachePolicy(boolean allowCache, int maxCacheSize) {
-            this.allowCache = allowCache;
-            this.maxSize = maxCacheSize;
-        }
+    public ActionResult onRequestComplete(ActionResult result) {
+        return null;
     }
 
     protected abstract ActionResult process(Context context, ActionRequest request, RequestEnv env) throws Throwable;
@@ -85,17 +52,9 @@ public abstract class FullAction implements Action {
     public final ActionResult processRequest(Context context, ActionRequest request, RequestEnv env) {
         ActionResult result;
         if (request.actionCacheAllowed()) {
-            BundleKey key = new BundleKey(args(request));
-            if (mCache != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
-                result = mCache.get(key);
-                if (result != null) {
-                    Log.i(TAG, "Cache hit.");
-                    return result;
-                } else {
-                    Log.i(TAG, "Cache miss.");
-                }
-            } else {
-                Log.i(TAG, "Cache was not allowed.");
+            result = getCache(env).get(request);
+            if (result != null) {
+                return result;
             }
         }
         try {
@@ -106,11 +65,27 @@ public abstract class FullAction implements Action {
         } catch (Throwable e) {
             result = onError(context, request, env, e);
         }
-
-        if (mCache != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
-            Log.i(TAG, "Filling the cache..");
-            mCache.put(new BundleKey(args(request)), result);
-        }
+        getCache(env).put(request, result);
         return result;
+    }
+
+    private synchronized ActionCache getCache(RequestEnv env) {
+        if (mCache == null) {
+            mCache = env.getActionCacheFactory().getCache(this, getCachePolicy());
+        }
+        return mCache;
+    }
+
+    public static class CachePolicy {
+
+        public static final CachePolicy NotAllowed = new CachePolicy(false, 0);
+
+        public final boolean allowCache;
+        public final int maxSize;
+
+        public CachePolicy(boolean allowCache, int maxCacheSize) {
+            this.allowCache = allowCache;
+            this.maxSize = maxCacheSize;
+        }
     }
 }

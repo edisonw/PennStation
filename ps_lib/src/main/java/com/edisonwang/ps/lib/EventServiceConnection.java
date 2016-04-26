@@ -11,6 +11,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.util.Log;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 
 /**
@@ -22,6 +23,7 @@ class EventServiceConnection implements ServiceConnection {
     public static final String EXTRA_REQUEST_TIME_MS = "connection_request_time";
     private final HashMap<String, Bundle> mPendingQueue = new HashMap<>();
     private final HashMap<String, Bundle> mRequestQueue = new HashMap<>();
+    private final HashMap<String, WeakReference<Requester.RequestListener>> mListeners;
     private final int[] mLock = {};
     private final Context mContext;
     private final EventServiceImpl.EventServiceResponseHandler mResponseHandler;
@@ -36,15 +38,16 @@ class EventServiceConnection implements ServiceConnection {
                                   PennStation.PennStationOptions options) {
         mContext = context;
         mResponseHandler = handler;
+        mListeners = new HashMap<>();
         mPendingWarningThreshold = options.pendingWarningThreshold;
         mDefaultQueueInfo = options.defaultUseLimitedQueueInfo;
     }
 
     public String queueAndExecute(Bundle bundle) {
-        return queueAndExecute(bundle, mDefaultQueueInfo);
+        return queueAndExecute(bundle, mDefaultQueueInfo, null);
     }
 
-    public String queueAndExecute(Bundle bundle, LimitedQueueInfo queueInfo) {
+    public String queueAndExecute(Bundle bundle, LimitedQueueInfo queueInfo, WeakReference<Requester.RequestListener> lisRef) {
         if (queueInfo != null) {
             bundle.putBoolean(EventServiceImpl.EXTRA_REQUEST_QUEUE_NEW_THREAD, false);
             bundle.putInt(EventServiceImpl.EXTRA_REQUEST_QUEUE_PRIORITY, queueInfo.priority);
@@ -56,7 +59,17 @@ class EventServiceConnection implements ServiceConnection {
         final String reqId = generateRequestId();
         bundle.putString(EXTRA_REQUEST_ID, reqId);
         bundle.putLong(EXTRA_REQUEST_TIME_MS, System.currentTimeMillis());
+        final Requester.RequestListener listener;
+        if (lisRef != null) {
+            listener = lisRef.get();
+            if (listener != null) {
+                listener.onRequested(bundle, reqId);
+            }
+        }
         synchronized (mLock) {
+            if (lisRef != null) {
+                mListeners.put(reqId, lisRef);
+            }
             Messenger service = mService;
             if (service != null) {
                 mRequestQueue.put(reqId, bundle);
@@ -164,14 +177,21 @@ class EventServiceConnection implements ServiceConnection {
         }
     }
 
-    public Bundle remove(String requestId) {
+    public Requester.RequestListener onComplete(String requestId) {
         synchronized (mLock) {
-            Bundle action = mRequestQueue.get(requestId);
             mRequestQueue.remove(requestId);
             cancelWarningIfNeeded(mRequestQueue.size());
-            return action;
+            WeakReference<Requester.RequestListener> listRef = mListeners.remove(requestId);
+            if (listRef != null) {
+                Requester.RequestListener listener = listRef.get();
+                if (listener != null) {
+                    return listener;
+                }
+            }
         }
+        return null;
     }
+
     public void cancel(String requestId) {
         synchronized (mLock) {
             if (isPending(requestId)) {
@@ -183,6 +203,13 @@ class EventServiceConnection implements ServiceConnection {
                 sendMessage(service, newCancelRequestMessage(requestId));
             }
             cancelWarningIfNeeded(mRequestQueue.size());
+            WeakReference<Requester.RequestListener> listRef = mListeners.remove(requestId);
+            if (listRef != null) {
+                Requester.RequestListener listener = listRef.get();
+                if (listener != null) {
+                    listener.onCancelled(requestId);
+                }
+            }
         }
     }
 

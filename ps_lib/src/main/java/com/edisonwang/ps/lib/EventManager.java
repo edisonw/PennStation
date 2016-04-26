@@ -3,7 +3,11 @@ package com.edisonwang.ps.lib;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.util.Log;
+
+import java.lang.ref.WeakReference;
 
 import de.greenrobot.event.EventBus;
 
@@ -15,9 +19,13 @@ public class EventManager {
     private final EventServiceConnection mServiceConnection;
     private final EventBus mBus;
     private final boolean mLogRequestStacks;
+    private final Handler mHandler;
 
     EventManager(Context context, PennStation.PennStationOptions options) {
         mBus = new EventBus();
+        final HandlerThread thread = new HandlerThread("EventManager");
+        thread.start();
+        mHandler = new Handler(thread.getLooper());
         mLogRequestStacks = options.logRequestStacks;
         mServiceConnection = new EventServiceConnection(context, new EventServiceResponseHandler(), options);
         context.bindService(new Intent(context, options.eventServiceClass), mServiceConnection,
@@ -61,7 +69,7 @@ public class EventManager {
     }
 
     public String requestAction(ActionRequest request, LimitedQueueInfo queueInfo) {
-        return mServiceConnection.queueAndExecute(createServiceBundle(request), queueInfo);
+        return mServiceConnection.queueAndExecute(createServiceBundle(request), queueInfo, null);
     }
 
     private Bundle createServiceBundle(ActionRequest request) {
@@ -74,7 +82,23 @@ public class EventManager {
         return bundle;
     }
 
+    protected void requestAction(final ActionRequest request,
+                                 final LimitedQueueInfo queueInfo,
+                                 long delay,
+                                 final WeakReference<Requester.RequestListener> listener) {
+        if (delay > 0) {
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    requestAction(request, queueInfo, 0, listener);
+                }
+            }, delay);
+        }
+        mServiceConnection.queueAndExecute(createServiceBundle(request), queueInfo, listener);
+    }
+
     private class EventServiceResponseHandler implements EventServiceImpl.EventServiceResponseHandler {
+
         @Override
         public void handleServiceResponse(Bundle b) {
             final String reqId = b.getString(EventServiceConnection.EXTRA_REQUEST_ID);
@@ -84,15 +108,23 @@ public class EventManager {
                 return;
             }
 
-            mServiceConnection.remove(reqId);
+            boolean completeSignal = b.getBoolean(EventServiceImpl.EXTRA_SERVICE_COMPLETE_SIGNAL, true);
+
             ActionResult result = b.getParcelable(EventServiceImpl.EXTRA_SERVICE_RESULT);
 
             if (result != null) {
                 result.setResponseInfo(new ResponseInfo(b));
-                if (result.postSticky()) {
-                    postLocalStickyEvent(result);
+                if (completeSignal) {
+                    Requester.RequestListener listener = mServiceConnection.onComplete(reqId);
+                    if (listener != null) {
+                        listener.onCompleted(reqId, result);
+                    }
                 } else {
-                    postLocalEvent(result);
+                    if (result.postSticky()) {
+                        postLocalStickyEvent(result);
+                    } else {
+                        postLocalEvent(result);
+                    }
                 }
             }
         }
