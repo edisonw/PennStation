@@ -1,17 +1,9 @@
 package com.edisonwang.ps.rxpennstation;
 
-import android.os.Bundle;
-
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestHelper;
-import com.edisonwang.ps.lib.ActionResult;
-import com.edisonwang.ps.lib.PennStation;
-import com.edisonwang.ps.lib.Requester;
-
-import java.lang.ref.WeakReference;
 
 import rx.Observable;
-import rx.Subscriber;
 
 /**
  * Right now there's no point to make this public
@@ -19,21 +11,7 @@ import rx.Subscriber;
  *
  * @author edi
  */
-public class PsRxFactory<T extends ActionResult> {
-
-    public static class RequestError extends Throwable {
-        public final ActionResult failedResult;
-
-        public RequestError(ActionResult failedResult) {
-            this.failedResult = failedResult;
-        }
-    }
-
-    private static PsRxFactory<ActionResult> generic = new PsRxFactory<>(ActionResult.class);
-
-    public static PsRxFactory<ActionResult> getGeneric() {
-        return generic;
-    }
+public class PsRxFactory<T> {
 
     final Class<T> type;
 
@@ -46,36 +24,7 @@ public class PsRxFactory<T extends ActionResult> {
     }
 
     public Observable<T> from(final ActionRequest request) {
-        return Observable.create(
-                new Observable.OnSubscribe<T>() {
-                    @Override
-                    public void call(final Subscriber<? super T> subscriber) {
-                        Requester.RequestListener requestListener = new Requester.RequestListener() {
-                            @Override
-                            public void onRequested(Bundle bundle, String requestId) {
-
-                            }
-
-                            @Override
-                            public void onCompleted(String reqId, ActionResult result) {
-                                if (!subscriber.isUnsubscribed()) {
-                                    if (type.isAssignableFrom(result.getClass())) {
-                                        subscriber.onNext((T) result);
-                                    } else if (!result.isSuccess()) {
-                                        subscriber.onError(new RequestError(result));
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void onCancelled(String requestId) {
-
-                            }
-                        };
-                        new Requester(request).request(PennStation.getManager(), new WeakReference<>(requestListener));
-                    }
-                }
-
-        );
+        return Observable.create(new ActionResultOnSubscribe<T>(this, request));
     }
+
 }

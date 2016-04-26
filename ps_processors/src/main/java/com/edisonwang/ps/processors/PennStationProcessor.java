@@ -51,6 +51,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 
 /**
@@ -76,12 +77,14 @@ public class PennStationProcessor extends AbstractProcessor {
     private Messager messager;
     private Elements elementUtils;
     private Class<?> rxFactoryClass;
+    private Types typeUtils;
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
         filer = processingEnv.getFiler();
         elementUtils = processingEnv.getElementUtils();
+        typeUtils = processingEnv.getTypeUtils();
         messager = processingEnv.getMessager();
     }
 
@@ -425,6 +428,7 @@ public class PennStationProcessor extends AbstractProcessor {
     }
 
     private void addRxRequestClassContent(String producer, String packageName, String listenerClassName, HashSet<String> events) {
+        rxFactoryClass = getRxFactoryClass();
         ClassName resultClass = ClassName.bestGuess("com.edisonwang.ps.lib.ActionResult");
 
         TypeSpec removeSubscriptionSubscription = TypeSpec.anonymousClassBuilder("")
@@ -465,6 +469,17 @@ public class PennStationProcessor extends AbstractProcessor {
         typeBuilder.addMethod(method.build());
 
         writeClass(packageName, observerClassName, typeBuilder.build(), filer);
+    }
+
+    private Class<?> getRxFactoryClass() {
+        if (rxFactoryClass == null) {
+            try {
+                rxFactoryClass = Class.forName("com.edisonwang.ps.rxpennstation.PsRxFactory");
+            } catch (Throwable e) {
+                // no rx present
+            }
+        }
+        return rxFactoryClass;
     }
 
     private HashSet<String> getEventsFromProducer(HashMap<String, HashSet<String>> producerEvents, TypeElement typed) {
@@ -682,15 +697,8 @@ public class PennStationProcessor extends AbstractProcessor {
     }
 
     private void addRxEventClassContent(TypeSpec.Builder typeBuilder, String eventClassName) {
-        if (rxFactoryClass == null) {
-            try {
-                rxFactoryClass = Class.forName("com.edisonwang.ps.rxpennstation.PsRxFactory");
-            } catch (Throwable e) {
-                // no rx present
-            }
-
-        }
-        if (rxFactoryClass != null) {
+        Class<?> factoryClass = getRxFactoryClass();
+        if (factoryClass != null) {
             typeBuilder.addField(FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(rxFactoryClass), ClassName.bestGuess(eventClassName)),
                     "Rx", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
                     .initializer("new $L<>($L.class)", rxFactoryClass.getName(), eventClassName).build());
