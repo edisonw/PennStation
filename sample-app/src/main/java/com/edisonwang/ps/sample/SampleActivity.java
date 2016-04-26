@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import rx.Subscriber;
+import rx.Subscription;
 
 @EventListener(producers = {
         ComplicatedAction.class,
@@ -80,6 +81,7 @@ public class SampleActivity extends Activity {
     };
 
     private EditText mUpdates;
+    private Subscription mSubscription;
 
     @SuppressLint("SetTextI18n")
     private void onReceived(String text) {
@@ -104,7 +106,7 @@ public class SampleActivity extends Activity {
     protected void onResume() {
         super.onResume();
         PennStation.registerListener(mListener);
-        SimpleActionObserver.create().subscribe(new Subscriber<ActionResult>() {
+        mSubscription = SimpleActionObserver.create().subscribe(new Subscriber<ActionResult>() {
             @Override
             public void onCompleted() {
 
@@ -126,6 +128,7 @@ public class SampleActivity extends Activity {
     protected void onPause() {
         super.onPause();
         PennStation.unRegisterListener(mListener);
+        mSubscription.unsubscribe();
     }
 
     public void requestAction(ActionRequest request) {
