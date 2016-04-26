@@ -10,6 +10,7 @@ import android.widget.EditText;
 import com.edisonwang.ps.annotations.EventListener;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestHelper;
+import com.edisonwang.ps.lib.ActionResult;
 import com.edisonwang.ps.lib.EventService;
 import com.edisonwang.ps.lib.LimitedQueueInfo;
 import com.edisonwang.ps.lib.PennStation;
@@ -25,6 +26,8 @@ import com.edisonwang.ps.sample.events.SimpleActionEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import rx.Subscriber;
 
 @EventListener(producers = {
         ComplicatedAction.class,
@@ -101,6 +104,22 @@ public class SampleActivity extends Activity {
     protected void onResume() {
         super.onResume();
         PennStation.registerListener(mListener);
+        SimpleActionObserver.create().subscribe(new Subscriber<ActionResult>() {
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onNext(ActionResult actionResult) {
+                Log.i("PennStationTest", "There was an simple action.");
+            }
+        });
     }
 
     @Override
