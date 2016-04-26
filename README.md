@@ -45,8 +45,8 @@ repositories {
     jcenter()
 }
 dependencies {
-    apt 'com.edisonwang.ps:ps_processors:1.3'
-    compile 'com.edisonwang.ps:ps_lib:1.3'
+    apt 'com.edisonwang.ps:ps_processors:1.3.2'
+    compile 'com.edisonwang.ps:ps_lib:1.3.2'
 }
 ```
 
@@ -71,6 +71,44 @@ For class that owns [event listeners]:
 * Annotate with @EventListener with list of producers.
 * Write the listeners that listens to those events and XXXEventListener will be generated.
 * Implement the listeners and (un)register it via PennStation.registerListener().
+
+Alternatively, you can use it to process Rx streams:
+* In your custom Application class or Activity.onCreate(), add 
+```java
+dependencies {
+    compile 'com.edisonwang.ps:ps_rx:1.3.2'
+}
+```
+
+To emit a certain type of Event:
+```java
+ //Generate Observable<SimpleActionEvent> that makes a new request onEach.
+    SimpleActionEvent.Rx.from(PsSimpleAction.helper()).subscribe(new Observer<SimpleActionEvent>() {
+
+      @Override
+      public void onError(Throwable throwable) {
+        //If this action has emitted an event that is Not the target event but also an error. 
+      }
+
+      @Override
+      public void onNext(SimpleActionEvent event) {
+        //When this event is emitted from this action. 
+      }
+    });
+```
+
+To only listen for events from specific actions: 
+```java
+    SimpleActionObserver.create().subscribe(new Observer<ActionResult>() {
+      ...
+      @Override
+      public void onNext(ActionResult actionResult) {
+         //All events emitted will be called onNext
+        //Do things depending on the type
+      }
+    });
+```
+
 
 [Simple Usage]: https://github.com/edisonw/PennStation/wiki/Simple-Usage
 [PennStation]: https://github.com/edisonw/Ipes
