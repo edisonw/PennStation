@@ -21,6 +21,14 @@ import rx.Subscriber;
  */
 public class PsRxFactory<T extends ActionResult> {
 
+    public static class RequestError extends Throwable {
+        public final ActionResult failedResult;
+
+        public RequestError(ActionResult failedResult) {
+            this.failedResult = failedResult;
+        }
+    }
+
     private static PsRxFactory<ActionResult> generic = new PsRxFactory<>(ActionResult.class);
 
     public static PsRxFactory<ActionResult> getGeneric() {
@@ -54,7 +62,7 @@ public class PsRxFactory<T extends ActionResult> {
                                     if (type.isAssignableFrom(result.getClass())) {
                                         subscriber.onNext((T) result);
                                     } else if (!result.isSuccess()) {
-                                        subscriber.onError(null);
+                                        subscriber.onError(new RequestError(result));
                                     }
                                 }
                             }
