@@ -7,7 +7,7 @@ import android.os.IBinder;
 
 /**
  * You can always extend this class and log the actions as needed.
- * <p/>
+ *
  * Make sure to register this Service.
  *
  * @author edi

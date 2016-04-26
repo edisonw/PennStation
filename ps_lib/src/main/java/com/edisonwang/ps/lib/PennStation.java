@@ -15,7 +15,7 @@ public class PennStation {
 
     /**
      * You can call this inside Application.onCreate();
-     * <p/>
+     *
      * This only needs to called once, call getManager() after.
      *
      * @param application Android Application Singleton.
