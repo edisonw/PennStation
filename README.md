@@ -22,6 +22,7 @@ It turns out, it does a great job scaling apps as it uses a Fully Decopuled MVC 
 # Usages
 
 * [Simple Usage]
+* [Tumblr Search By Tag Example]
  
 # Setup
 
@@ -111,6 +112,7 @@ To only listen for events from specific actions:
 
 
 [Simple Usage]: https://github.com/edisonw/PennStation/wiki/Simple-Usage
+[Tumblr Search By Tag Example]: https://github.com/edisonw/PennStationTumblrDemo
 [PennStation]: https://github.com/edisonw/Ipes
 [EventBus]: https://github.com/google/guava/wiki/EventBusExplained
 [Otto by Square]: http://square.github.io/otto/
