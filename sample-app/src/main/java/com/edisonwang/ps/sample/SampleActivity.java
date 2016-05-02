@@ -82,6 +82,7 @@ public class SampleActivity extends Activity {
 
     private EditText mUpdates;
     private Subscription mSubscription;
+    private Subscription mSubscriptionSingle;
 
     @SuppressLint("SetTextI18n")
     private void onReceived(String text) {
@@ -119,7 +120,23 @@ public class SampleActivity extends Activity {
 
             @Override
             public void onNext(ActionResult actionResult) {
-                Log.i("PennStationTest", "There was an simple action.");
+                Log.i("PennStationTest", "There was an simple action to action observer.");
+            }
+        });
+        mSubscriptionSingle = SimpleActionEvent.Rx.observable().subscribe(new Subscriber<SimpleActionEvent>() {
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onNext(SimpleActionEvent event) {
+                Log.i("PennStationTest", "There was an simple action to event observer.");
             }
         });
     }
@@ -129,6 +146,7 @@ public class SampleActivity extends Activity {
         super.onPause();
         PennStation.unRegisterListener(mListener);
         mSubscription.unsubscribe();
+        mSubscriptionSingle.unsubscribe();
     }
 
     public void requestAction(ActionRequest request) {

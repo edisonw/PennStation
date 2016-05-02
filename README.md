@@ -50,8 +50,8 @@ repositories {
     jcenter()
 }
 dependencies {
-    apt 'com.edisonwang.ps:ps_processors:1.3.2'
-    compile 'com.edisonwang.ps:ps_lib:1.3.2'
+    apt 'com.edisonwang.ps:ps_processors:1.3.3'
+    compile 'com.edisonwang.ps:ps_lib:1.3.3'
 }
 ```
 
@@ -82,7 +82,7 @@ Alternatively, you can use it to process Rx streams:
 * Add the dependency to your build.gradle 
 ```java
 dependencies {
-    compile 'com.edisonwang.ps:ps_rx:1.3.2'
+    compile 'com.edisonwang.ps:ps_rx:1.3.3'
 }
 ```
 
@@ -103,7 +103,27 @@ To emit a certain type of Event:
     });
 ```
 
-To only listen for events from specific actions: 
+To listen for a single event type for a specific action:
+```java
+SimpleActionEvent.Rx.observable().subscribe(new Subscriber<SimpleActionEvent>() {
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onNext(SimpleActionEvent event) {
+                //Do things.
+            }
+        });
+```
+
+To listen for all event types from a specific action:
 ```java
     SimpleActionObserver.create().subscribe(new Observer<ActionResult>() {
       ...
@@ -114,7 +134,6 @@ To only listen for events from specific actions:
       }
     });
 ```
-
 
 [Simple Usage]: https://github.com/edisonw/PennStation/wiki/Simple-Usage
 [Tumblr Search By Tag Example]: https://github.com/edisonw/PennStationTumblrDemo
