@@ -4,16 +4,16 @@ import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestHelper;
 
 import rx.Observable;
+import rx.subjects.PublishSubject;
 
 /**
- * Right now there's no point to make this public
- * But when Annotation Support arrives for Jack and Jill.
- *
  * @author edi
  */
 public class PsRxFactory<T> {
 
     final Class<T> type;
+
+    final PublishSubject<T> bus = PublishSubject.create();
 
     public PsRxFactory(Class<T> type) {
         this.type = type;
@@ -27,4 +27,13 @@ public class PsRxFactory<T> {
         return Observable.create(new ActionResultOnSubscribe<T>(this, request));
     }
 
+    public Observable<T> observable() {
+        return bus.asObservable();
+    }
+
+    public void send(T event) {
+        if (bus.hasObservers()) {
+            bus.onNext(event);
+        }
+    }
 }

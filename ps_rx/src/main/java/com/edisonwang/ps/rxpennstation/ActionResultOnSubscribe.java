@@ -7,7 +7,7 @@ import com.edisonwang.ps.lib.ActionResult;
 import com.edisonwang.ps.lib.PennStation;
 import com.edisonwang.ps.lib.Requester;
 
-import java.lang.ref.WeakReference;
+import java.util.HashSet;
 
 import rx.Observable;
 import rx.Subscriber;
@@ -16,25 +16,19 @@ import rx.Subscriber;
  * @author edi
  */
 class ActionResultOnSubscribe<T> implements Observable.OnSubscribe<T> {
-    private PsRxFactory t;
-    private final ActionRequest request;
-
-    public static class RequestError extends Throwable {
-        public final ActionResult failedResult;
-
-        public RequestError(ActionResult failedResult) {
-            this.failedResult = failedResult;
-        }
-    }
+    private PsRxFactory mFactory;
+    private final ActionRequest mRequest;
+    private final HashSet<Requester.RequestListener> mListeners = new HashSet<>(3);
 
     public ActionResultOnSubscribe(PsRxFactory T, ActionRequest request) {
-        t = T;
-        this.request = request;
+        mFactory = T;
+        mRequest = request;
     }
 
     @Override
     public void call(final Subscriber<? super T> subscriber) {
         Requester.RequestListener requestListener = new Requester.RequestListener() {
+
             @Override
             public void onRequested(Bundle bundle, String requestId) {
 
@@ -43,11 +37,12 @@ class ActionResultOnSubscribe<T> implements Observable.OnSubscribe<T> {
             @Override
             public void onCompleted(String reqId, ActionResult result) {
                 if (!subscriber.isUnsubscribed()) {
-                    if (t.type.isAssignableFrom(result.getClass())) {
+                    if (mFactory.type.isAssignableFrom(result.getClass())) {
                         subscriber.onNext((T) result);
-                    } else if (!result.isSuccess()) {
-                        subscriber.onError(new RequestError(result));
                     }
+                }
+                synchronized (mListeners) {
+                    mListeners.remove(this);
                 }
             }
 
@@ -56,6 +51,11 @@ class ActionResultOnSubscribe<T> implements Observable.OnSubscribe<T> {
 
             }
         };
-        new Requester(request).request(PennStation.getManager(), new WeakReference<>(requestListener));
+
+        synchronized (mListeners) {
+            mListeners.add(requestListener);
+        }
+
+        Requester.singleFire(mRequest, PennStation.getManager(), requestListener);
     }
 }

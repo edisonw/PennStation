@@ -45,6 +45,10 @@ public class Requester {
         eventManager.requestAction(request, queue, delay, listener);
     }
 
+    public static void singleFire(ActionRequest request, EventManager em, RequestListener listener) {
+        em.requestAction(request, null, 0, new WeakReference<>(listener));
+    }
+
     public interface RequestListener {
         /**
          * Called right before the request is made.

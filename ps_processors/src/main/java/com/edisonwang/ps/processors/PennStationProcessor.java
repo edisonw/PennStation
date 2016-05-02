@@ -454,9 +454,9 @@ public class PennStationProcessor extends AbstractProcessor {
                         .build();
         TypeSpec eventListener = eventListenerClass.build();
 
-        TypeSpec.Builder observerbleOnSubscribe = TypeSpec.anonymousClassBuilder("")
+        TypeSpec.Builder observableOnSubscribe = TypeSpec.anonymousClassBuilder("")
                 .addSuperinterface(ParameterizedTypeName.get(ClassName.bestGuess("Observable.OnSubscribe"), resultClass));
-        observerbleOnSubscribe.addMethod(MethodSpec.methodBuilder("call").addModifiers(Modifier.PUBLIC).addParameter(subscriber)
+        observableOnSubscribe.addMethod(MethodSpec.methodBuilder("call").addModifiers(Modifier.PUBLIC).addParameter(subscriber)
                 .addStatement("final " + listenerClassName + " listener = $L", eventListener)
                 .addStatement("com.edisonwang.ps.lib.PennStation.registerListener(listener)")
                 .addStatement("subscriber.add($L)", removeSubscriptionSubscription).build());
@@ -464,8 +464,8 @@ public class PennStationProcessor extends AbstractProcessor {
         final String observerClassName = producer.substring(producer.lastIndexOf(".") + 1) + "Observer";
         TypeSpec.Builder typeBuilder = TypeSpec.classBuilder(observerClassName).addModifiers(Modifier.PUBLIC);
         MethodSpec.Builder method = MethodSpec.methodBuilder("create").addModifiers(Modifier.PUBLIC, Modifier.STATIC);
-        ClassName rxObserverble = ClassName.bestGuess("rx.Observable");
-        method.returns(ParameterizedTypeName.get(rxObserverble, resultClass)).addStatement("return $L.create($L)", rxObserverble, observerbleOnSubscribe.build());
+        ClassName rxObservable = ClassName.bestGuess("rx.Observable");
+        method.returns(ParameterizedTypeName.get(rxObservable, resultClass)).addStatement("return $L.create($L)", rxObservable, observableOnSubscribe.build());
         typeBuilder.addMethod(method.build());
 
         writeClass(packageName, observerClassName, typeBuilder.build(), filer);
@@ -547,7 +547,7 @@ public class PennStationProcessor extends AbstractProcessor {
             }
             String eventClassName = typed.getSimpleName().toString() + postFix;
             String originalClassName = typed.getQualifiedName().toString();
-            String packageName = packageFromQualifiedName(originalClassName);
+            final String packageName = packageFromQualifiedName(originalClassName) + ".events";
             TypeName self = guessTypeName(eventClassName);
 
             if (baseClassString == null) {
@@ -622,9 +622,9 @@ public class PennStationProcessor extends AbstractProcessor {
                     "CREATOR", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
                     .initializer("$L", creator).build());
 
-            writeClass(packageName + ".events", eventClassName, typeBuilder.build(), filer);
+            writeClass(packageName, eventClassName, typeBuilder.build(), filer);
 
-            return packageName + ".events." + eventClassName;
+            return packageName + "." + eventClassName;
         } catch (Throwable e) {
             throw new IllegalArgumentException("Failed to write.", e);
         }
@@ -698,11 +698,17 @@ public class PennStationProcessor extends AbstractProcessor {
 
     private void addRxEventClassContent(TypeSpec.Builder typeBuilder, String eventClassName) {
         Class<?> factoryClass = getRxFactoryClass();
-        if (factoryClass != null) {
-            typeBuilder.addField(FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(rxFactoryClass), ClassName.bestGuess(eventClassName)),
-                    "Rx", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                    .initializer("new $L<>($L.class)", rxFactoryClass.getName(), eventClassName).build());
+        if (factoryClass == null) {
+            return;
         }
+        typeBuilder.addField(FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(rxFactoryClass), ClassName.bestGuess(eventClassName)),
+                "Rx", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                .initializer("new $L<>($L.class)", rxFactoryClass.getName(), eventClassName).build());
+        typeBuilder.addMethod(MethodSpec.methodBuilder("onSent")
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(ClassName.bestGuess("com.edisonwang.ps.lib.EventManager.EventServiceResponseHandler"), "handler")
+                .addStatement("super.onSent(handler)")
+                .addStatement("Rx.send(this)").build());
     }
 
     public static void writeClass(String path,

@@ -97,7 +97,7 @@ public class EventManager {
         mServiceConnection.queueAndExecute(createServiceBundle(request), queueInfo, listener);
     }
 
-    private class EventServiceResponseHandler implements EventServiceImpl.EventServiceResponseHandler {
+    public class EventServiceResponseHandler implements EventServiceImpl.EventServiceResponseHandler {
 
         @Override
         public void handleServiceResponse(Bundle b) {
@@ -125,6 +125,7 @@ public class EventManager {
                     } else {
                         postLocalEvent(result);
                     }
+                    result.onSent(this);
                 }
             }
         }

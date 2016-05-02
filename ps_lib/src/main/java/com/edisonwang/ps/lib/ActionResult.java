@@ -49,7 +49,19 @@ public abstract class ActionResult implements Parcelable {
         dest.writeByte((byte) (mPostSticky ? 1 : 0));
     }
 
+    /**
+     * If isSuccess is false, chain events will not continue execution.
+     *
+     * @return false and depended actions will not be executed, return true by default.
+     */
     public boolean isSuccess() {
         return true;
+    }
+
+    /**
+     * Used by handler only.
+     */
+    public void onSent(EventManager.EventServiceResponseHandler handler) {
+
     }
 }
