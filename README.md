@@ -2,6 +2,8 @@
 
 [PennStation] is an event service that I use as a template to build apps that require IPC.
 
+It supports usages with both EventBus pattern and Rx pattern. 
+
 # Why?
 
 [EventBus] is a great communication pattern on apps and have great library adoptions such as [EventBus by greenrobot] and [Otto by Square] on Android.
@@ -18,6 +20,8 @@ PennStation is an inter-process event service library that supports the followin
 And during this entire process....write only the [implementation code for the action] and the [event listeners].
 
 It turns out, it does a great job scaling apps as it uses a Fully Decopuled MVC model so it's great when all the components are agnostic of what the other two components are but only cared about the tasks given to them. 
+
+It also supports Rx so that while you can declare your logics in one place and have the benefit of the Rx world, you can also get the best of the Event Bus world. 
  
 # Usages
 
