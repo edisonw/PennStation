@@ -51,11 +51,12 @@ dependencies {
 }
 ```
 
-* Add the following to your AndroidManifest.xml (or extend a new service class), you can also add a :process tag to make it run on a separate process.
+* Add the following to your AndroidManifest.xml (or extend a new service class).
 ```xml
-        <service android:name="com.edisonwang.ps.lib.EventService" />
+        /* optional: android:process="ps" */
+        <service android:exported="false" android:name="com.edisonwang.ps.lib.EventService" /> 
 ```
-* In your custom Application class or Activity.onCreate(), add 
+* In your custom Application.onCreate() or Activity.onCreate(), add 
 ```java
         PennStation.init(getApplication(), new PennStation.PennStationOptions(EventService.class /* or extended class */ ));
 ```
@@ -74,7 +75,7 @@ For class that owns [event listeners]:
 * Implement the listeners and (un)register it via PennStation.registerListener().
 
 Alternatively, you can use it to process Rx streams:
-* In your custom Application class or Activity.onCreate(), add 
+* Add the dependency to your build.gradle 
 ```java
 dependencies {
     compile 'com.edisonwang.ps:ps_rx:1.3.2'
