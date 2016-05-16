@@ -23,18 +23,21 @@ public class ActionRequest implements Parcelable {
     };
     private final ArrayList<ActionRequest> mDependencies = new ArrayList<>();
     private final ArrayList<ActionRequest> mNext = new ArrayList<>();
-    Bundle mArgs;
     private boolean mActionCacheAllowed = false;
+    private boolean mTerminateOnFailure = true;
     private ActionKey mActionKey;
     //Transient args
     private ActionResults mResults;
 
+    Bundle mArgs;
     public ActionRequest(ActionKey actionKey, Bundle args,
                          ArrayList<ActionRequestHelper> dependencies,
                          ArrayList<ActionRequestHelper> chainedActions,
-                         boolean cacheAllowed) {
+                         boolean cacheAllowed,
+                         boolean terminateOnFailure) {
         mActionKey = actionKey;
         mActionCacheAllowed = cacheAllowed;
+        mTerminateOnFailure = terminateOnFailure;
         mArgs = args;
         if (mArgs == null) {
             mArgs = new Bundle();
@@ -54,6 +57,7 @@ public class ActionRequest implements Parcelable {
 
     protected ActionRequest(Parcel in) {
         mActionCacheAllowed = in.readInt() == 1;
+        mTerminateOnFailure = in.readInt() == 1;
         mActionKey = (ActionKey) in.readSerializable();
         in.readList(mDependencies, getClassLoader());
         in.readList(mNext, getClassLoader());
@@ -66,6 +70,15 @@ public class ActionRequest implements Parcelable {
     public ActionRequest actionCacheAllowed(boolean cacheAllowed) {
         mActionCacheAllowed = cacheAllowed;
         return this;
+    }
+
+    public ActionRequest terminateOnFailure(boolean terminateOnFailure) {
+        mTerminateOnFailure = terminateOnFailure;
+        return this;
+    }
+
+    public boolean terminateOnFailure() {
+        return mTerminateOnFailure;
     }
 
     public boolean actionCacheAllowed() {
@@ -97,6 +110,7 @@ public class ActionRequest implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(mActionCacheAllowed ? 1 : 0);
+        dest.writeInt(mTerminateOnFailure ? 1 : 0);
         dest.writeSerializable(mActionKey);
         dest.writeList(mDependencies);
         dest.writeList(mNext);
@@ -115,7 +129,7 @@ public class ActionRequest implements Parcelable {
         mResults = results;
         for (ActionRequest actionRequest : mDependencies) {
             actionRequest.process(resultDeliver, service, env, results);
-            if (mResults.hasFailed()) {
+            if (mResults.hasFailed() && actionRequest.terminateOnFailure()) {
                 onCompletion(resultDeliver, null, isOriginalRequest);
                 return;
             }
@@ -125,13 +139,17 @@ public class ActionRequest implements Parcelable {
         if (result != null) {
             resultDeliver.deliverResult(result, false);
             results.add(result);
-            if (mResults.hasFailed()) {
+            if (mResults.hasFailed() && terminateOnFailure()) {
                 onCompletion(resultDeliver, result, isOriginalRequest);
                 return;
             }
         }
         for (ActionRequest actionRequest : mNext) {
             actionRequest.process(resultDeliver, service, env, results);
+            if (mResults.hasFailed() && actionRequest.terminateOnFailure()) {
+                onCompletion(resultDeliver, result, isOriginalRequest);
+                return;
+            }
         }
         onCompletion(resultDeliver, result, isOriginalRequest);
     }

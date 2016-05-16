@@ -27,8 +27,8 @@ import com.edisonwang.ps.sample.events.SimpleActionEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import rx.Subscriber;
 import rx.Subscription;
+import rx.functions.Action1;
 
 @EventListener(producers = {
         ComplicatedAction.class,
@@ -107,35 +107,15 @@ public class SampleActivity extends Activity {
     protected void onResume() {
         super.onResume();
         PennStation.registerListener(mListener);
-        mSubscription = SimpleActionObserver.create().subscribe(new Subscriber<ActionResult>() {
+        mSubscription = SimpleActionObserver.create().subscribe(new Action1<ActionResult>() {
             @Override
-            public void onCompleted() {
-
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-
-            }
-
-            @Override
-            public void onNext(ActionResult actionResult) {
+            public void call(ActionResult actionResult) {
                 Log.i("PennStationTest", "There was an simple action to action observer.");
             }
         });
-        mSubscriptionSingle = SimpleActionEvent.Rx.observable().subscribe(new Subscriber<SimpleActionEvent>() {
+        mSubscriptionSingle = SimpleActionEvent.Rx.observable().subscribe(new Action1<SimpleActionEvent>() {
             @Override
-            public void onCompleted() {
-
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-
-            }
-
-            @Override
-            public void onNext(SimpleActionEvent event) {
+            public void call(SimpleActionEvent event) {
                 Log.i("PennStationTest", "There was an simple action to event observer.");
             }
         });
