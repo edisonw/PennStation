@@ -125,14 +125,9 @@ SimpleActionEvent.Rx.observable().subscribe(new Subscriber<SimpleActionEvent>() 
 
 To listen for all event types from a specific action:
 ```java
-    SimpleActionObserver.create().subscribe(new Observer<ActionResult>() {
-      ...
-      @Override
-      public void onNext(ActionResult actionResult) {
-         //All events emitted will be called onNext
-        //Do things depending on the type
-      }
-    });
+    SimpleActionObserver.create().subscribe(actionResult -> {  
+       //Do something.
+    }});
 ```
 
 [Simple Usage]: https://github.com/edisonw/PennStation/wiki/Simple-Usage
