@@ -23,19 +23,22 @@ public class ActionRequest implements Parcelable {
     };
     private final ArrayList<ActionRequest> mDependencies = new ArrayList<>();
     private final ArrayList<ActionRequest> mNext = new ArrayList<>();
+    private final ArrayList<Requirement> mRequirementFactories = new ArrayList<>();
+    private final boolean mIsFullAction;
     private boolean mActionCacheAllowed = false;
     private boolean mTerminateOnFailure = true;
-    private ActionKey mActionKey;
-    //Transient args
-    private ActionResults mResults;
+    private final ActionKey mActionKey;
 
     Bundle mArgs;
+
     public ActionRequest(ActionKey actionKey, Bundle args,
                          ArrayList<ActionRequestHelper> dependencies,
                          ArrayList<ActionRequestHelper> chainedActions,
+                         ArrayList<Requirement> requirementFactories,
                          boolean cacheAllowed,
                          boolean terminateOnFailure) {
         mActionKey = actionKey;
+        mIsFullAction = mActionKey.value() instanceof FullAction;
         mActionCacheAllowed = cacheAllowed;
         mTerminateOnFailure = terminateOnFailure;
         mArgs = args;
@@ -48,10 +51,15 @@ public class ActionRequest implements Parcelable {
         for (ActionRequestHelper next : chainedActions) {
             mNext.add(next.buildRequest());
         }
+        for (Requirement factory : requirementFactories) {
+            mRequirementFactories.add(factory);
+        }
+
     }
 
     public ActionRequest(ActionKey actionKey) {
         mActionKey = actionKey;
+        mIsFullAction = mActionKey.value() instanceof FullAction;
         mArgs = new Bundle();
     }
 
@@ -59,12 +67,18 @@ public class ActionRequest implements Parcelable {
         mActionCacheAllowed = in.readInt() == 1;
         mTerminateOnFailure = in.readInt() == 1;
         mActionKey = (ActionKey) in.readSerializable();
+        mIsFullAction = mActionKey.value() instanceof FullAction;
         in.readList(mDependencies, getClassLoader());
         in.readList(mNext, getClassLoader());
+        in.readList(mRequirementFactories, getClassLoader());
         mArgs = in.readBundle(getClass().getClassLoader());
         if (mArgs == null) {
             mArgs = new Bundle();
         }
+    }
+
+    public boolean isFullAction() {
+        return mIsFullAction;
     }
 
     public ActionRequest actionCacheAllowed(boolean cacheAllowed) {
@@ -89,10 +103,6 @@ public class ActionRequest implements Parcelable {
         mArgs.putAll(bundle);
     }
 
-    public ArrayList<ActionResult> getCurrentRequestResults() {
-        return mResults.getResults();
-    }
-
     public Bundle getArguments(ClassLoader loader) {
         mArgs.setClassLoader(loader);
         return mArgs;
@@ -114,39 +124,43 @@ public class ActionRequest implements Parcelable {
         dest.writeSerializable(mActionKey);
         dest.writeList(mDependencies);
         dest.writeList(mNext);
+        dest.writeList(mRequirementFactories);
         dest.writeBundle(mArgs != null ? mArgs : new Bundle());
     }
 
-    public void process(ResultDeliver resultDeliver,
-                        EventServiceImpl service,
-                        ActionRequestEnv env,
-                        ActionResults results) {
-        boolean isOriginalRequest = false;
-        if (results == null) {
-            results = new ActionResults();
-            isOriginalRequest = true;
-        }
-        mResults = results;
+    public void process(final ResultDeliver resultDeliver,
+                        final RequestEnv env,
+                        final boolean isOriginalRequest) {
+        //Handle dependencies.
         for (ActionRequest actionRequest : mDependencies) {
-            actionRequest.process(resultDeliver, service, env, results);
-            if (mResults.hasFailed() && actionRequest.terminateOnFailure()) {
+            actionRequest.process(resultDeliver, env, false);
+            if (env.getResults().hasFailed() && actionRequest.terminateOnFailure()) {
                 onCompletion(resultDeliver, null, isOriginalRequest);
                 return;
             }
         }
+        //Handle requirements.
+        for (Requirement requirement : mRequirementFactories) {
+            if (!requirement.get().isSatisfied(env, this)) {
+                onCompletion(resultDeliver, null, isOriginalRequest);
+                return;
+            }
+        }
+        //Process current request.
         final Action action = mActionKey.value();
-        final ActionResult result = action.processRequest(service.getContext(), this, env);
+        final ActionResult result = action.processRequest(env.getContext(), this, env);
         if (result != null) {
             resultDeliver.deliverResult(result, false);
-            results.add(result);
-            if (mResults.hasFailed() && terminateOnFailure()) {
+            env.getResults().add(this, result);
+            if (env.getResults().hasFailed() && terminateOnFailure()) {
                 onCompletion(resultDeliver, result, isOriginalRequest);
                 return;
             }
         }
+        //Handle chained events.
         for (ActionRequest actionRequest : mNext) {
-            actionRequest.process(resultDeliver, service, env, results);
-            if (mResults.hasFailed() && actionRequest.terminateOnFailure()) {
+            actionRequest.process(resultDeliver, env, false);
+            if (env.getResults().hasFailed() && actionRequest.terminateOnFailure()) {
                 onCompletion(resultDeliver, result, isOriginalRequest);
                 return;
             }

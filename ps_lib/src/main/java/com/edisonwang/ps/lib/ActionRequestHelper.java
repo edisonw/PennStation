@@ -14,6 +14,7 @@ public abstract class ActionRequestHelper {
 
     private final ArrayList<ActionRequestHelper> mDependencies = new ArrayList<>();
     private final ArrayList<ActionRequestHelper> mNext = new ArrayList<>();
+    private final ArrayList<Requirement> mRequirements = new ArrayList<>();
     protected Intent mVariableHolder = new Intent();
     private Bundle mValues;
     private boolean mCacheAllowed;
@@ -105,6 +106,11 @@ public abstract class ActionRequestHelper {
         return this;
     }
 
+    public ActionRequestHelper requires(Requirement requirement) {
+        mRequirements.add(requirement);
+        return this;
+    }
+
     /**
      * This request will be executed if the current request succeed.
      *
@@ -126,6 +132,7 @@ public abstract class ActionRequestHelper {
                 mVariableHolder.getExtras(),
                 mDependencies,
                 mNext,
+                mRequirements,
                 mCacheAllowed,
                 mTerminateOnFailure);
     }

@@ -23,7 +23,7 @@ public class EventService extends Service {
     }
 
     protected EventServiceImpl createImpl() {
-        return new EventServiceImpl<>(this);
+        return new DefaultServiceImpl<>(this);
     }
 
     @Override
