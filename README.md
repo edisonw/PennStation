@@ -50,8 +50,8 @@ repositories {
     jcenter()
 }
 dependencies {
-    apt 'com.edisonwang.ps:ps_processors:1.3.3'
-    compile 'com.edisonwang.ps:ps_lib:1.3.3'
+    apt 'com.edisonwang.ps:ps_processors:{VERSION}'
+    compile 'com.edisonwang.ps:ps_lib:{VERSION}'
 }
 ```
 
@@ -82,7 +82,7 @@ Alternatively, you can use it to process Rx streams:
 * Add the dependency to your build.gradle 
 ```java
 dependencies {
-    compile 'com.edisonwang.ps:ps_rx:1.3.3'
+    compile 'com.edisonwang.ps:ps_rx:{VERSION}'
 }
 ```
 
