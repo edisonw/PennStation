@@ -24,7 +24,7 @@ public class PsRxFactory<T> {
     }
 
     public Observable<T> from(final ActionRequest request) {
-        return Observable.create(new ActionResultOnSubscribe<T>(this, request));
+        return Observable.create(new ActionResultOnSubscribe<>(this, request));
     }
 
     public Observable<T> observable() {
