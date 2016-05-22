@@ -23,7 +23,7 @@ It turns out, it does a great job scaling apps as it uses a Fully Decopuled MVC 
 
 It also supports Rx so that while you can declare your logics in one place and have the benefit of the Rx world, you can also get the best of the Event Bus world. It compliments Rx by isolating the exectuion queues and bounding them away from a particular Activity or Fragment.
 
-While PennStation is very efficient, PennStation calls are more expensive than just launching a thread (especially when used without IPC), so it should be used for async operations but light CPU tasks (<30ms) tasks such as sorting a local finite list or tasks that will not involve any disk/network IOs. Those tasks should run via Rx operators. 
+While PennStation is very efficient via help of annotation processors, PennStation calls are more expensive than just launching a runnable thread (especially when used without IPC), so it should be used for async operations but light CPU tasks (<30ms) such as sorting a local finite list or tasks that will not involve any disk/network IOs. Those tasks should run via Rx operators. 
  
 # Usages
 
