@@ -32,6 +32,20 @@ android {
     lintOptions {
         abortOnError false
     }
+
+    flavorDimensions("rx")
+
+    productFlavors {
+
+        rx {
+            dimension = "rx"
+        }
+
+        regular {
+            dimension = "rx"
+        }
+    }
+
 }
 
 dependencies {
@@ -42,5 +56,5 @@ dependencies {
     */
     apt project(':ps_processors')
     compile project(':ps_lib')
-    compile project(':ps_rx')
+    rxCompile project(':ps_rx')
 }

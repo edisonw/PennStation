@@ -429,6 +429,9 @@ public class PennStationProcessor extends AbstractProcessor {
 
     private void addRxRequestClassContent(String producer, String packageName, String listenerClassName, HashSet<String> events) {
         rxFactoryClass = getRxFactoryClass();
+        if (rxFactoryClass == null) {
+            return;
+        }
         ClassName resultClass = ClassName.bestGuess("com.edisonwang.ps.lib.ActionResult");
 
         TypeSpec removeSubscriptionSubscription = TypeSpec.anonymousClassBuilder("")

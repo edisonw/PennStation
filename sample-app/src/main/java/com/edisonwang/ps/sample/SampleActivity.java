@@ -10,7 +10,6 @@ import android.widget.EditText;
 import com.edisonwang.ps.annotations.EventListener;
 import com.edisonwang.ps.lib.ActionRequest;
 import com.edisonwang.ps.lib.ActionRequestHelper;
-import com.edisonwang.ps.lib.ActionResult;
 import com.edisonwang.ps.lib.EventService;
 import com.edisonwang.ps.lib.LimitedQueueInfo;
 import com.edisonwang.ps.lib.PennStation;
@@ -26,9 +25,6 @@ import com.edisonwang.ps.sample.events.SimpleActionEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import rx.Subscription;
-import rx.functions.Action1;
 
 @EventListener(producers = {
         ComplicatedAction.class,
@@ -81,8 +77,6 @@ public class SampleActivity extends Activity {
     };
 
     private EditText mUpdates;
-    private Subscription mSubscription;
-    private Subscription mSubscriptionSingle;
 
     @SuppressLint("SetTextI18n")
     private void onReceived(String text) {
@@ -107,26 +101,12 @@ public class SampleActivity extends Activity {
     protected void onResume() {
         super.onResume();
         PennStation.registerListener(mListener);
-        mSubscription = SimpleActionObserver.create().subscribe(new Action1<ActionResult>() {
-            @Override
-            public void call(ActionResult actionResult) {
-                Log.i("PennStationTest", "There was an simple action to action observer.");
-            }
-        });
-        mSubscriptionSingle = SimpleActionEvent.Rx.observable().subscribe(new Action1<SimpleActionEvent>() {
-            @Override
-            public void call(SimpleActionEvent event) {
-                Log.i("PennStationTest", "There was an simple action to event observer.");
-            }
-        });
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         PennStation.unRegisterListener(mListener);
-        mSubscription.unsubscribe();
-        mSubscriptionSingle.unsubscribe();
     }
 
     public void requestAction(ActionRequest request) {
