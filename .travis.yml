@@ -2,7 +2,6 @@ sudo: false # Use Travis docker infrastructure
 language: android
 
 jdk:
-  - oraclejdk7
   - oraclejdk8
 
 cache:
