@@ -85,6 +85,9 @@ public class RequestKeeper {
         }
     }
 
+    /**
+     * @param helper request builder.
+     */
     public void addRequest(ActionRequestHelper helper) {
         addRequest(helper.buildRequest());
     }
