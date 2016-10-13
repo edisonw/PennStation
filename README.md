@@ -32,7 +32,7 @@ While PennStation is very efficient via help of annotation processors, PennStati
  
 # Setup
 
-* Add the APT plugin to the file where you declare com.android.tools.build:gradle version. 
+* (SKIP if on Gradle 2.2+) Add the APT plugin to the file where you declare com.android.tools.build:gradle version. 
 ```gradle
 buildscript {
     repositories {
@@ -52,7 +52,8 @@ repositories {
     jcenter()
 }
 dependencies {
-    apt 'com.edisonwang.ps:ps_processors:{VERSION}'
+    annotationProcessor 'com.edisonwang.ps:ps_processors:{VERSION}' //Gradle 2.2+
+    apt 'com.edisonwang.ps:ps_processors:{VERSION}' //Gradle 2.1 or lower
     compile 'com.edisonwang.ps:ps_lib:{VERSION}'
 }
 ```
